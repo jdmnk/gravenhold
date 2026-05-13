@@ -9,6 +9,49 @@ npm run dev:frontend
 
 Open [http://localhost:5173](http://localhost:5173) with your browser to see the result.
 
+## Local vs Slot Commands
+
+Fully local development uses local Katana plus a local Vite frontend:
+
+```bash
+npm run dev:chain
+npm run dev:frontend
+```
+
+`npm run dev:chain` starts local Katana, migrates the dev world, and writes
+`.env.local`. `npm run dev:frontend` starts Vite against that local env.
+
+Slot development uses a remote Cartridge Slot Katana world plus a local Vite
+frontend:
+
+```bash
+curl -L https://slot.cartridge.sh | bash
+slot auth login
+slot deployments create gravenhold-slot katana -c katana_slot.toml
+slot deployments accounts gravenhold-slot katana
+
+SLOT_NAME=gravenhold-slot \
+SLOT_ACCOUNT_ADDRESS=0x... \
+SLOT_PRIVATE_KEY=0x... \
+scripts/deploy_slot.sh
+
+pnpm dev:slot
+```
+
+Before the first Slot deploy, create the remote Katana deployment with
+`slot deployments create`. After that, `slot deployments accounts` returns the
+prefunded deployer account. The world and actions addresses do not exist yet;
+`scripts/deploy_slot.sh` creates them with `sozo migrate`, writes
+`.env.slot.local`, and prints the Vercel `VITE_*` values.
+
+After the first successful Slot deploy, use `pnpm dev:slot` whenever you only
+want to run the local frontend against the existing Slot world. Re-run
+`scripts/deploy_slot.sh` when contracts, Cairo content, or balance changed and
+need to be migrated to Slot.
+
+See `docs/slot-vercel-runbook.md` for the complete Slot and Vercel deployment
+flow.
+
 ## Image Assets
 
 Gravenhold has an Athanor-style image generation pipeline for first-pass game art:

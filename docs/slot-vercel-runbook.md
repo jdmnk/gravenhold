@@ -3,9 +3,93 @@
 This is the practical next-step runbook for deploying Gravenhold as a Vercel
 static frontend backed by a Cartridge Slot Katana world.
 
-## 1. Get Slot Credentials
+## Command Matrix
 
-Fetch the prefunded deployer account for the Slot Katana instance:
+Fully local development:
+
+```bash
+npm run dev:chain
+npm run dev:frontend
+```
+
+This starts local Katana, migrates the dev world, writes `.env.local`, and runs
+the Vite frontend against local chain state.
+
+Slot backend with local frontend:
+
+```bash
+curl -L https://slot.cartridge.sh | bash
+slot auth login
+slot deployments create gravenhold-slot katana -c katana_slot.toml
+slot deployments accounts gravenhold-slot katana
+
+SLOT_NAME=gravenhold-slot \
+SLOT_ACCOUNT_ADDRESS=0x... \
+SLOT_PRIVATE_KEY=0x... \
+scripts/deploy_slot.sh
+
+pnpm dev:slot
+```
+
+This deploys or upgrades the Dojo world on Cartridge Slot, writes
+`.env.slot.local`, and runs the Vite frontend locally against Slot chain state.
+
+After the first successful Slot deploy, `pnpm dev:slot` is enough when you only
+want to run the local frontend against the existing Slot world. Re-run
+`scripts/deploy_slot.sh` when contracts, Cairo content, or balance changed and
+must be migrated to Slot.
+
+## What Exists Before First Slot Deploy
+
+Before the first Slot deploy, you have:
+
+- `SLOT_NAME`, for example `gravenhold-slot`
+- a remote Katana deployment created with
+  `slot deployments create gravenhold-slot katana -c katana_slot.toml`
+- `SLOT_ACCOUNT_ADDRESS` from `slot deployments accounts` after the Katana
+  deployment exists
+- `SLOT_PRIVATE_KEY` from `slot deployments accounts` after the Katana
+  deployment exists
+- the predictable RPC URL:
+  `https://api.cartridge.gg/x/gravenhold-slot/katana`
+
+Before the first Slot deploy, you do not have:
+
+- `VITE_DOJO_WORLD_ADDRESS`
+- `VITE_DOJO_ACTIONS_ADDRESS`
+- `manifest_slot.json`
+- `.env.slot.local`
+
+Those are produced by `scripts/deploy_slot.sh` after `sozo migrate` creates the
+world and deploys `gravenhold-actions`.
+
+## 0. Install Slot CLI
+
+If `slot` is not found, install the Cartridge Slot CLI:
+
+```bash
+curl -L https://slot.cartridge.sh | bash
+```
+
+Follow the installer output. It may ask you to restart your shell or add Slot's
+bin directory to your `PATH`.
+
+Then authenticate:
+
+```bash
+slot auth login
+```
+
+## 1. Create Slot Katana And Get Credentials
+
+Create the Slot Katana deployment first:
+
+```bash
+slot deployments create gravenhold-slot katana -c katana_slot.toml
+```
+
+Then fetch the prefunded deployer account for that Slot Katana instance:
+
 
 ```bash
 slot deployments accounts gravenhold-slot katana

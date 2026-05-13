@@ -14,11 +14,17 @@ export type GravenholdNetwork = {
   localPrivateKey?: string;
 };
 
-function requiredPublicEnv(name: string, value: string | undefined): string {
+function requiredPublicEnv(
+  name: string,
+  value: string | undefined,
+  profile: GravenholdNetwork["profile"],
+): string {
   if (typeof value === "undefined" || value === "") {
-    throw new Error(
-      `Missing ${name}. Run npm run dev:chain before opening the app.`,
-    );
+    const hint =
+      profile === "dev"
+        ? "Run npm run dev:chain before opening the app."
+        : "Configure the Slot/Vercel VITE_* environment variables and redeploy.";
+    throw new Error(`Missing ${name}. ${hint}`);
   }
   return value;
 }
@@ -32,6 +38,7 @@ export function getNetwork(): GravenholdNetwork {
     actionsAddress: requiredPublicEnv(
       "VITE_DOJO_ACTIONS_ADDRESS",
       import.meta.env.VITE_DOJO_ACTIONS_ADDRESS,
+      profile,
     ),
     chainId: import.meta.env.VITE_STARKNET_CHAIN_ID ?? "KATANA",
     controllerKeychainUrl: import.meta.env.VITE_CONTROLLER_KEYCHAIN_URL,
@@ -44,6 +51,7 @@ export function getNetwork(): GravenholdNetwork {
     worldAddress: requiredPublicEnv(
       "VITE_DOJO_WORLD_ADDRESS",
       import.meta.env.VITE_DOJO_WORLD_ADDRESS,
+      profile,
     ),
   };
 }

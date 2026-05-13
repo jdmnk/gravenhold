@@ -15,3 +15,6 @@ cairo_test = "2.15.0"
 sierra-replace-ids = true
 
 [profile.dev]
+
+# Cartridge Katana slot profile. World-level differences live in dojo_slot.toml.
+[profile.slot]

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:slot": "tsc --noEmit && vite build --mode slot",
     "start": "vite preview",
     "lint": "eslint",
     "test": "jiti tests/run-tests.ts",
@@ -15,6 +16,7 @@
     "dojo:migrate": "PATH=\"$HOME/.asdf/shims:$PATH\" asdf exec sozo migrate --profile dev",
     "dev:chain": "scripts/dev_up.sh",
     "dev:frontend": "vite",
+    "dev:slot": "vite --mode slot",
     "generate:display-content": "jiti scripts/generate_rpg_content.ts",
     "generate:encounter-prompts": "jiti scripts/generate-assets/generate-encounter-background-prompts.ts",
     "generate:images": "jiti scripts/generate-assets/generate-images.ts",

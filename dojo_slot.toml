@@ -1,0 +1,15 @@
+[world]
+name = "Gravenhold Slot"
+description = "Gravenhold practice deployment"
+seed = "gravenhold_slot_v1"
+
+[namespace]
+default = "gravenhold"
+
+[writers]
+"gravenhold" = ["gravenhold-actions"]
+
+[env]
+rpc_url = "https://api.cartridge.gg/x/gravenhold-slot/katana"
+account_address = "0x0"
+private_key = "0x0"

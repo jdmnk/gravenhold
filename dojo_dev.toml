@@ -1,0 +1,10 @@
+[world]
+name = "Gravenhold"
+description = "Deterministic single-player progression RPG"
+seed = "gravenhold_dev_v1"
+
+[namespace]
+default = "gravenhold"
+
+[writers]
+"gravenhold" = ["gravenhold-actions"]

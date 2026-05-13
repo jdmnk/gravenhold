@@ -1,0 +1,51 @@
+{
+  "name": "gravenhold",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "start": "vite preview",
+    "lint": "eslint",
+    "test": "jiti tests/run-tests.ts",
+    "type-check": "tsc --noEmit",
+    "dojo:build": "PATH=\"$HOME/.asdf/shims:$PATH\" asdf exec sozo build",
+    "dojo:bindgen": "PATH=\"$HOME/.asdf/shims:$PATH\" asdf exec sozo build --typescript --bindings-output generated/dojo",
+    "dojo:test": "PATH=\"$HOME/.asdf/shims:$PATH\" asdf exec sozo test",
+    "dojo:migrate": "PATH=\"$HOME/.asdf/shims:$PATH\" asdf exec sozo migrate --profile dev",
+    "dev:chain": "scripts/dev_up.sh",
+    "dev:frontend": "vite",
+    "generate:display-content": "jiti scripts/generate_rpg_content.ts",
+    "generate:encounter-prompts": "jiti scripts/generate-assets/generate-encounter-background-prompts.ts",
+    "generate:images": "jiti scripts/generate-assets/generate-images.ts",
+    "generate:pixellab-ui": "jiti scripts/generate-assets/generate-pixellab-ui.ts",
+    "generate:rpg-content": "npm run generate:display-content",
+    "smoke:onchain-local": "jiti scripts/smoke_onchain_local.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.53",
+    "@cartridge/controller": "^0.13.12",
+    "@cartridge/presets": "^0.5.2",
+    "@fontsource/medievalsharp": "^5.2.8",
+    "ai": "^6.0.168",
+    "openai": "^6.34.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "starknet": "^10.0.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^9",
+    "globals": "^17.6.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^8.0.11"
+  }
+}

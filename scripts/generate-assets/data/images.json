@@ -1,0 +1,414 @@
+{
+  "backgrounds": [
+    {
+      "id": "fallen-gate",
+      "filename": "fallen-gate.webp",
+      "category": "backgrounds",
+      "size": "1536x1024",
+      "format": "webp",
+      "description": "a ruined stone gate blocking a muddy valley road after cold rain, mossy stones, warped iron bars, distant hills, torch-warm highlights in a grey-green wilderness",
+      "intendedUse": "level-one encounter backdrop for The Fallen Gate"
+    },
+    {
+      "id": "mudslide-path",
+      "filename": "mudslide-path.webp",
+      "category": "backgrounds",
+      "size": "1536x1024",
+      "format": "webp",
+      "description": "a steep hillside path turned to sliding mud by heavy rain, broken roots, slick stones, low mist, muted brown and green terrain, narrow dangerous passage",
+      "intendedUse": "early survival encounter backdrop"
+    },
+    {
+      "id": "guardian-scouts",
+      "filename": "guardian-scouts.webp",
+      "category": "backgrounds",
+      "size": "1536x1024",
+      "format": "webp",
+      "description": "a tense clearing before a stone guardian outpost, crude watchfires, shield-marked standing stones, distant scout silhouettes implied by shadows only",
+      "intendedUse": "hard enemy encounter backdrop"
+    }
+  ],
+  "items": [
+    {
+      "id": "iron-gauntlets",
+      "filename": "iron-gauntlets.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Iron Gauntlets: Iron plates fitted for direct force.",
+      "intendedUse": "inventory icon for item 1"
+    },
+    {
+      "id": "scholar-ring",
+      "filename": "scholar-ring.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Scholar Ring: A ring etched with patient mnemonic marks.",
+      "intendedUse": "inventory icon for item 2"
+    },
+    {
+      "id": "shadow-boots",
+      "filename": "shadow-boots.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Shadow Boots: Soft boots built for quiet footing.",
+      "intendedUse": "inventory icon for item 3"
+    },
+    {
+      "id": "ember-charm",
+      "filename": "ember-charm.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Ember Charm: A warm charm that steadies breath under pressure.",
+      "intendedUse": "inventory icon for item 4"
+    },
+    {
+      "id": "balanced-cloak",
+      "filename": "balanced-cloak.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Balanced Cloak: A practical cloak with hidden pockets and map-stitching.",
+      "intendedUse": "inventory icon for item 5"
+    },
+    {
+      "id": "oath-cord",
+      "filename": "oath-cord.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Oath Cord: A heavy cord worn by those who refuse to yield.",
+      "intendedUse": "inventory icon for item 6"
+    },
+    {
+      "id": "breaker-blade",
+      "filename": "breaker-blade.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Breaker Blade: A blunt blade made for breaking guards and gates.",
+      "intendedUse": "inventory icon for item 7"
+    },
+    {
+      "id": "logic-lens",
+      "filename": "logic-lens.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Logic Lens: A narrow lens that reveals stress lines and hidden joins.",
+      "intendedUse": "inventory icon for item 8"
+    },
+    {
+      "id": "quickstep-vest",
+      "filename": "quickstep-vest.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Quickstep Vest: Light armor that turns sudden movement into protection.",
+      "intendedUse": "inventory icon for item 9"
+    },
+    {
+      "id": "resolve-icon",
+      "filename": "resolve-icon.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Resolve Icon: A polished icon that stays warm in hostile places.",
+      "intendedUse": "inventory icon for item 10"
+    },
+    {
+      "id": "engineer-mail",
+      "filename": "engineer-mail.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Engineer Mail: A fitted mail shirt with marked reinforcement points.",
+      "intendedUse": "inventory icon for item 11"
+    },
+    {
+      "id": "wind-prayer",
+      "filename": "wind-prayer.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Wind Prayer: A pendant that helps its bearer move without panic.",
+      "intendedUse": "inventory icon for item 12"
+    },
+    {
+      "id": "warden-hammer",
+      "filename": "warden-hammer.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Warden Hammer: A war hammer balanced for relentless pressure.",
+      "intendedUse": "inventory icon for item 13"
+    },
+    {
+      "id": "living-codex",
+      "filename": "living-codex.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Living Codex: A traveling codex of methods, proofs, and countersigns.",
+      "intendedUse": "inventory icon for item 14"
+    },
+    {
+      "id": "mist-mantle",
+      "filename": "mist-mantle.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Mist Mantle: A mantle that seems to choose the easiest path first.",
+      "intendedUse": "inventory icon for item 15"
+    },
+    {
+      "id": "lantern-relic",
+      "filename": "lantern-relic.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Lantern Relic: A relic that quiets fear before it can take shape.",
+      "intendedUse": "inventory icon for item 16"
+    },
+    {
+      "id": "duelist-knife",
+      "filename": "duelist-knife.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Duelist Knife: A precise dueling weapon with unexpected stopping power.",
+      "intendedUse": "inventory icon for item 17"
+    },
+    {
+      "id": "sage-circlet",
+      "filename": "sage-circlet.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Sage Circlet: A silver circlet for calm judgment under supernatural pressure.",
+      "intendedUse": "inventory icon for item 18"
+    },
+    {
+      "id": "titan-edge",
+      "filename": "titan-edge.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Titan Edge: A legendary edge that answers only decisive force.",
+      "intendedUse": "inventory icon for item 19"
+    },
+    {
+      "id": "oracle-prism",
+      "filename": "oracle-prism.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Oracle Prism: A crystal archive that assembles patterns as they appear.",
+      "intendedUse": "inventory icon for item 20"
+    },
+    {
+      "id": "horizon-coat",
+      "filename": "horizon-coat.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Horizon Coat: A seamless coat that never catches, drags, or hesitates.",
+      "intendedUse": "inventory icon for item 21"
+    },
+    {
+      "id": "star-heart",
+      "filename": "star-heart.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Star Heart: An old star set in iron, still bright in the dark.",
+      "intendedUse": "inventory icon for item 22"
+    },
+    {
+      "id": "calculated-maul",
+      "filename": "calculated-maul.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Calculated Maul: A weapon whose weight changes when its bearer understands it.",
+      "intendedUse": "inventory icon for item 23"
+    },
+    {
+      "id": "moonstep-armor",
+      "filename": "moonstep-armor.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Moonstep Armor: Armor built for motion guided by instinct.",
+      "intendedUse": "inventory icon for item 24"
+    },
+    {
+      "id": "guard-buckler",
+      "filename": "guard-buckler.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Guard Buckler: A battered guard plate that turns the shoulder into a weapon.",
+      "intendedUse": "inventory icon for item 25"
+    },
+    {
+      "id": "cipher-quill",
+      "filename": "cipher-quill.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Cipher Quill: A writing blade used to mark plans into wood, wax, and stone.",
+      "intendedUse": "inventory icon for item 26"
+    },
+    {
+      "id": "foxglass-dagger",
+      "filename": "foxglass-dagger.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Foxglass Dagger: A narrow dagger balanced for one clean opening.",
+      "intendedUse": "inventory icon for item 27"
+    },
+    {
+      "id": "pilgrim-mantle",
+      "filename": "pilgrim-mantle.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Pilgrim Mantle: A plain travel mantle that keeps fear from spreading.",
+      "intendedUse": "inventory icon for item 28"
+    },
+    {
+      "id": "bulwark-plate",
+      "filename": "bulwark-plate.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Bulwark Plate: Layered plates built for holding ground under impact.",
+      "intendedUse": "inventory icon for item 29"
+    },
+    {
+      "id": "tactician-baton",
+      "filename": "tactician-baton.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Tactician Baton: A command rod marked with battlefield timing notes.",
+      "intendedUse": "inventory icon for item 30"
+    },
+    {
+      "id": "glasshook-blade",
+      "filename": "glasshook-blade.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Glasshook Blade: A hooked blade that rewards quick angles and clean exits.",
+      "intendedUse": "inventory icon for item 31"
+    },
+    {
+      "id": "vowkeeper-mail",
+      "filename": "vowkeeper-mail.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Vowkeeper Mail: Quiet mail that turns each breath into renewed commitment.",
+      "intendedUse": "inventory icon for item 32"
+    },
+    {
+      "id": "giantbone-harness",
+      "filename": "giantbone-harness.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Giantbone Harness: A heavy harness that lets the whole body answer a challenge.",
+      "intendedUse": "inventory icon for item 33"
+    },
+    {
+      "id": "pattern-scepter",
+      "filename": "pattern-scepter.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Pattern Scepter: A scepter whose etched head preserves solved patterns.",
+      "intendedUse": "inventory icon for item 34"
+    },
+    {
+      "id": "skycutters",
+      "filename": "skycutters.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Skycutters: Twin climbing blades that make vertical routes feel level.",
+      "intendedUse": "inventory icon for item 35"
+    },
+    {
+      "id": "saints-aegis",
+      "filename": "saints-aegis.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Saint's Aegis: A polished breastplate carried by those who refuse despair.",
+      "intendedUse": "inventory icon for item 36"
+    },
+    {
+      "id": "worldbreak-mantle",
+      "filename": "worldbreak-mantle.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Worldbreak Mantle: A mantle weighted like a mountain and cut for those who can bear it.",
+      "intendedUse": "inventory icon for item 37"
+    },
+    {
+      "id": "final-theorem-staff",
+      "filename": "final-theorem-staff.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Final Theorem Staff: A staff that turns final assumptions into visible structure.",
+      "intendedUse": "inventory icon for item 38"
+    },
+    {
+      "id": "phantom-needle",
+      "filename": "phantom-needle.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Phantom Needle: A needle blade that finds the space before an opening exists.",
+      "intendedUse": "inventory icon for item 39"
+    },
+    {
+      "id": "dawnward-plate",
+      "filename": "dawnward-plate.webp",
+      "category": "items",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "Dawnward Plate: A bright plate harness that makes retreat feel impossible.",
+      "intendedUse": "inventory icon for item 40"
+    }
+  ],
+  "sprites": [],
+  "ui": [
+    {
+      "id": "parchment-panel",
+      "filename": "parchment-panel.webp",
+      "category": "ui",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "aged parchment and worn leather panel material, subtle grain, faint stains, darkened edges, warm tan center",
+      "intendedUse": "panel background texture"
+    },
+    {
+      "id": "stone-frame",
+      "filename": "stone-frame.webp",
+      "category": "ui",
+      "size": "1024x1024",
+      "format": "webp",
+      "description": "weathered carved stone and brass border material, dark crevices, chipped corners, warm metallic trim",
+      "intendedUse": "decorative frame texture reference"
+    }
+  ]
+}

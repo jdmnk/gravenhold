@@ -477,11 +477,6 @@ function GameConsole({
       <header className="topbar">
         <strong className="brand">GRAVENHOLD</strong>
         <SceneHud bundle={bundle} visualEvents={visualEvents} />
-        {pendingLabel ? (
-          <div className="pending-chip" role="status">
-            {pendingLabel}
-          </div>
-        ) : null}
         <ShellOptionsPanel
           bundle={bundle}
           busy={busy}
@@ -516,6 +511,11 @@ function GameConsole({
                 key={visualEvents.result.key}
               >
                 {visualEvents.result.text}
+              </div>
+            ) : null}
+            {pendingLabel ? (
+              <div className="result-burst result-burst-pending" role="status">
+                {pendingLabel}
               </div>
             ) : null}
             {showingEncounter ? (

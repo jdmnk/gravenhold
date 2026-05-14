@@ -460,18 +460,74 @@ button:disabled {
   padding: 0.3rem 0.55rem;
 }
 
-.notice-ribbon {
+.toast-notice {
+  align-items: center;
+  animation: toast-notice-in 180ms ease-out both;
   background: linear-gradient(
     180deg,
-    rgba(32, 72, 75, 0.88),
-    rgba(16, 42, 45, 0.92)
+    rgba(32, 72, 75, 0.96),
+    rgba(16, 42, 45, 0.98)
   );
   border: 1px solid rgba(98, 215, 223, 0.34);
   border-radius: 6px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 16px 36px rgba(0, 0, 0, 0.42);
   color: #d4fbff;
-  padding: 0.75rem 1rem;
+  display: flex;
+  gap: 0.65rem;
+  max-width: min(30rem, calc(100vw - 1.2rem));
+  padding: 0.55rem 0.65rem 0.55rem 0.8rem;
+  position: fixed;
+  right: 0.7rem;
+  top: 0.7rem;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  user-select: text;
+  z-index: 80;
+}
+
+.toast-notice p {
+  font-size: 0.82rem;
+  line-height: 1.25;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.toast-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.28rem;
+}
+
+.toast-action {
+  background: rgba(2, 8, 9, 0.45);
+  border: 1px solid rgba(98, 215, 223, 0.28);
+  border-radius: 5px;
+  color: #d4fbff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  min-height: 1.45rem;
+  padding: 0.28rem 0.42rem;
+  text-transform: uppercase;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    filter 140ms ease;
+  user-select: none;
+}
+
+.toast-action:hover,
+.toast-action:focus-visible {
+  background: rgba(34, 91, 96, 0.55);
+  border-color: rgba(98, 215, 223, 0.52);
+  filter: brightness(1.08);
+  outline: none;
+}
+
+.toast-action-close {
+  color: rgba(246, 234, 212, 0.82);
 }
 
 .empty-state-panel {
@@ -1037,8 +1093,8 @@ button:disabled {
   display: grid;
   gap: 0.78rem;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
-  min-height: 2.45rem;
-  padding: 0 0.25rem;
+  min-height: 2.75rem;
+  padding: 0.24rem 0.42rem;
 }
 
 .pending-chip {
@@ -1118,7 +1174,7 @@ button:disabled {
 .inventory-section {
   min-width: 0;
   overflow: hidden;
-  padding: 0.3rem;
+  padding: 0.62rem 0.42rem 0.58rem;
 }
 
 .inventory-section {
@@ -1133,7 +1189,7 @@ button:disabled {
   font-family: var(--font-display);
   font-size: 0.92rem;
   line-height: 1;
-  margin-bottom: 0.24rem;
+  margin-bottom: 0.42rem;
   text-align: center;
   text-shadow: 0 2px 0 #000;
   text-transform: uppercase;
@@ -1172,7 +1228,7 @@ button:disabled {
 }
 
 .result-burst {
-  animation: result-burst 760ms ease-out both;
+  animation: result-burst 1800ms ease-out both;
   background: rgba(5, 4, 3, 0.78);
   border: 1px solid rgba(255, 239, 185, 0.42);
   color: #f9e7ad;
@@ -1856,6 +1912,7 @@ button:disabled {
 
 .options-panel {
   height: 2rem;
+  margin-block: 0.12rem;
   position: relative;
   width: 7.4rem;
 }
@@ -1944,6 +2001,17 @@ button:disabled {
   from {
     opacity: 0;
     transform: translateY(-0.18rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem);
   }
   to {
     opacity: 1;
@@ -2069,11 +2137,11 @@ button:disabled {
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.86);
   }
-  18% {
+  12% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1.04);
   }
-  72% {
+  82% {
     opacity: 1;
     transform: translate(-50%, -54%) scale(1);
   }

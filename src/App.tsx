@@ -343,8 +343,6 @@ export default function Home() {
           </header>
         ) : null}
 
-        {notice ? <div className="notice-ribbon">{notice}</div> : null}
-
         {bundle && network && session ? (
           <GameConsole
             bundle={bundle}
@@ -363,7 +361,50 @@ export default function Home() {
           />
         ) : null}
       </div>
+
+      {notice ? (
+        <ToastNotice message={notice} onDismiss={() => setNotice(null)} />
+      ) : null}
     </main>
+  );
+}
+
+function ToastNotice({
+  message,
+  onDismiss,
+}: {
+  message: string;
+  onDismiss: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard?.writeText(message);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <div className="toast-notice" role="status">
+      <p>{message}</p>
+      <div className="toast-actions">
+        <button className="toast-action" onClick={handleCopy} type="button">
+          {copied ? "Copied" : "Copy"}
+        </button>
+        <button
+          aria-label="Dismiss notice"
+          className="toast-action toast-action-close"
+          onClick={onDismiss}
+          type="button"
+        >
+          Close
+        </button>
+      </div>
+    </div>
   );
 }
 

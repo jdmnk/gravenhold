@@ -21,6 +21,7 @@
     "generate:encounter-prompts": "jiti scripts/generate-assets/generate-encounter-background-prompts.ts",
     "generate:images": "jiti scripts/generate-assets/generate-images.ts",
     "generate:pixellab-ui": "jiti scripts/generate-assets/generate-pixellab-ui.ts",
+    "generate:transparent-items": "jiti scripts/generate-assets/generate-transparent-item-icons.ts",
     "generate:rpg-content": "npm run generate:display-content",
     "smoke:onchain-local": "jiti scripts/smoke_onchain_local.ts"
   },

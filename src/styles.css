@@ -49,6 +49,7 @@
   --ui-main-frame: url("/assets/game/ui/main-frame.png");
   --ui-main-frame-slice: 28;
   --ui-main-frame-width: 16px;
+  --game-left-column-width: 13.5rem;
   --ui-action-frame: url("/assets/game/ui/action-unselected-frame.png");
   --ui-action-frame-selected: url("/assets/game/ui/action-selected-frame.png");
   --ui-action-frame-slice: 24;
@@ -1071,7 +1072,7 @@ button:disabled {
 .main-grid {
   display: grid;
   gap: 0.35rem;
-  grid-template-columns: 13.5rem minmax(0, 1fr);
+  grid-template-columns: var(--game-left-column-width) minmax(0, 1fr);
   min-height: 0;
 }
 
@@ -1105,7 +1106,7 @@ button:disabled {
 .bottom-row {
   display: grid;
   gap: 0.35rem;
-  grid-template-columns: 12.5rem minmax(0, 1fr) 16rem;
+  grid-template-columns: var(--game-left-column-width) minmax(0, 1fr) 16rem;
   min-height: 0;
   position: relative;
   z-index: 4;

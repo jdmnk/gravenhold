@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   createGameSession,
@@ -21,6 +21,7 @@ import {
   statLabels,
   statShortLabels,
   type ChoiceLogView,
+  type EquipmentSlot,
   type ItemView,
   type RewardOfferView,
   type RunBundle,
@@ -58,6 +59,24 @@ type ChainConnection =
       network: null;
     };
 
+type PendingAction =
+  | { kind: "start" }
+  | { kind: "choice"; stat: StatId }
+  | { equipNow: boolean; kind: "reward"; rewardIndex: number }
+  | { itemId: number; kind: "equip" };
+
+type RunVisualEvents = {
+  changedEquipmentSlots: ReadonlySet<EquipmentSlot>;
+  changedStats: ReadonlySet<StatId>;
+  healthChanged: boolean;
+  healthLost: boolean;
+  latestLogIndex: number | null;
+  levelChanged: boolean;
+  newInventoryItemIds: ReadonlySet<number>;
+  result: { key: string; text: string; tone: "bad" | "good" } | null;
+  sceneKey: string;
+};
+
 export default function Home() {
   const [seedInput, setSeedInput] = useState(defaultSeed);
   const [connection] = useState<ChainConnection>(() => {
@@ -74,11 +93,15 @@ export default function Home() {
       };
     }
   });
+  const [initialLoadComplete, setInitialLoadComplete] = useState(
+    () => connection.network?.accountMode !== "local",
+  );
   const [session, setSession] = useState<GameSession | null>(null);
   const [connectingSession, setConnectingSession] = useState(false);
   const [bundle, setBundle] = useState<RunBundle | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(connection.error);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
   const { network } = connection;
   const showLocalSeed = Boolean(
@@ -116,6 +139,7 @@ export default function Home() {
       return nextSession;
     } catch (error) {
       setNotice(formatError(error));
+      setInitialLoadComplete(true);
       return null;
     } finally {
       setConnectingSession(false);
@@ -130,11 +154,28 @@ export default function Home() {
       network.accountMode !== "local"
     )
       return;
-    void connectSession();
+
+    let cancelled = false;
+    async function bootstrapLocalSession() {
+      const nextSession = await connectSession();
+      if (!nextSession && !cancelled) {
+        setInitialLoadComplete(true);
+      }
+    }
+
+    void bootstrapLocalSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, [connectSession, connectingSession, network, session]);
 
   useEffect(() => {
-    if (!network || !session) return;
+    if (!network) {
+      setInitialLoadComplete(true);
+      return;
+    }
+    if (!session) return;
     const activeNetwork = network;
     const activeSession = session;
     let cancelled = false;
@@ -148,16 +189,19 @@ export default function Home() {
         if (cancelled) return;
         if (runId === BigInt(0)) {
           setBundle(null);
+          setInitialLoadComplete(true);
           return;
         }
 
         const nextBundle = await loadRunBundle(activeNetwork, runId);
         if (!cancelled) {
           setBundle(nextBundle);
+          setInitialLoadComplete(true);
         }
       } catch (error) {
         if (!cancelled) {
           setNotice(formatError(error));
+          setInitialLoadComplete(true);
         }
       }
     }
@@ -169,9 +213,13 @@ export default function Home() {
     };
   }, [network, session]);
 
-  async function runAction(action: () => Promise<void>) {
+  async function runAction(
+    nextPendingAction: PendingAction,
+    action: () => Promise<void>,
+  ) {
     if (busy) return;
     setBusy(true);
+    setPendingAction(nextPendingAction);
     setNotice(null);
     try {
       await action();
@@ -179,11 +227,12 @@ export default function Home() {
       setNotice(formatError(error));
     } finally {
       setBusy(false);
+      setPendingAction(null);
     }
   }
 
   function handleStartRun() {
-    void runAction(async () => {
+    void runAction({ kind: "start" }, async () => {
       if (!network) throw new Error("Chain account is not ready.");
       const activeSession = session ?? (await connectSession());
       if (!activeSession) throw new Error("Chain account is not ready.");
@@ -197,7 +246,7 @@ export default function Home() {
   }
 
   function handleChooseStat(stat: StatId) {
-    void runAction(async () => {
+    void runAction({ kind: "choice", stat }, async () => {
       if (!network || !session || !bundle) throw new Error("Run is not ready.");
       await chooseOption(network, session.signer, bundle.run.id, stat);
       await loadByRunId(network, bundle.run.id);
@@ -205,21 +254,25 @@ export default function Home() {
   }
 
   function handleReward(reward: RewardOfferView, equipNow: boolean) {
-    void runAction(async () => {
-      if (!network || !session || !bundle) throw new Error("Run is not ready.");
-      await chooseReward(
-        network,
-        session.signer,
-        bundle.run.id,
-        reward.index,
-        equipNow,
-      );
-      await loadByRunId(network, bundle.run.id);
-    });
+    void runAction(
+      { equipNow, kind: "reward", rewardIndex: reward.index },
+      async () => {
+        if (!network || !session || !bundle)
+          throw new Error("Run is not ready.");
+        await chooseReward(
+          network,
+          session.signer,
+          bundle.run.id,
+          reward.index,
+          equipNow,
+        );
+        await loadByRunId(network, bundle.run.id);
+      },
+    );
   }
 
   function handleEquip(itemId: number) {
-    void runAction(async () => {
+    void runAction({ itemId, kind: "equip" }, async () => {
       if (!network || !session || !bundle) throw new Error("Run is not ready.");
       await equipItem(network, session.signer, bundle.run.id, itemId);
       await loadByRunId(network, bundle.run.id);
@@ -233,11 +286,14 @@ export default function Home() {
     () => inventoryItemIds(bundle?.character.inventoryBits ?? BigInt(0)),
     [bundle?.character.inventoryBits],
   );
+  const showBootLoader = !initialLoadComplete && !bundle;
 
   return (
     <main className="game-root">
       <div className="game-shell">
-        {!bundle ? (
+        {showBootLoader ? <BootLoaderPanel network={network} /> : null}
+
+        {!showBootLoader && !bundle ? (
           <header className="start-panel">
             <div className="start-copy">
               {network ? (
@@ -296,6 +352,7 @@ export default function Home() {
             currentText={currentText}
             inventoryIds={inventoryIds}
             network={network}
+            pendingAction={pendingAction}
             seedInput={seedInput}
             session={session}
             onChooseStat={handleChooseStat}
@@ -310,12 +367,34 @@ export default function Home() {
   );
 }
 
+function BootLoaderPanel({ network }: { network: GravenholdNetwork | null }) {
+  return (
+    <section aria-label="Loading active run" className="boot-loader-panel">
+      <div className="boot-loader-mark" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="boot-loader-copy">
+        {network ? (
+          <span className="start-network-badge">
+            {formatNetworkBadge(network)}
+          </span>
+        ) : null}
+        <h1 className="boot-loader-title">{storyText.title}</h1>
+        <p>Checking active run...</p>
+      </div>
+    </section>
+  );
+}
+
 function GameConsole({
   bundle,
   busy,
   currentText,
   inventoryIds,
   network,
+  pendingAction,
   seedInput,
   session,
   onChooseStat,
@@ -329,6 +408,7 @@ function GameConsole({
   currentText: ReturnType<typeof getEncounterText> | null;
   inventoryIds: number[];
   network: GravenholdNetwork;
+  pendingAction: PendingAction | null;
   seedInput: string;
   session: GameSession;
   onChooseStat: (stat: StatId) => void;
@@ -345,12 +425,22 @@ function GameConsole({
   );
   const showingReward = bundle.run.phase === "reward";
   const showingComplete = bundle.run.phase === "complete";
+  const visualEvents = useRunVisualEvents(bundle);
+  const pendingLabel = pendingAction ? getPendingActionLabel(pendingAction) : null;
 
   return (
-    <section aria-label="Gravenhold game console" className="game-console">
+    <section
+      aria-label="Gravenhold game console"
+      className={`game-console ${busy ? "game-console-busy" : ""}`}
+    >
       <header className="topbar">
         <strong className="brand">GRAVENHOLD</strong>
-        <SceneHud bundle={bundle} />
+        <SceneHud bundle={bundle} visualEvents={visualEvents} />
+        {pendingLabel ? (
+          <div className="pending-chip" role="status">
+            {pendingLabel}
+          </div>
+        ) : null}
         <ShellOptionsPanel
           bundle={bundle}
           busy={busy}
@@ -365,30 +455,49 @@ function GameConsole({
       <div className="main-grid">
         <aside className="equipment-section">
           <h2>Equipped</h2>
-          <EquipmentPanel bundle={bundle} />
+          <EquipmentPanel bundle={bundle} visualEvents={visualEvents} />
         </aside>
 
         <div className="center-column">
-          <div className="viewport">
+          <div
+            className={`viewport ${visualEvents.healthLost ? "viewport-damaged" : ""}`}
+          >
+            {visualEvents.healthLost ? (
+              <span
+                aria-hidden="true"
+                className="viewport-hit-flash"
+                key={`hit-${visualEvents.result?.key ?? visualEvents.sceneKey}`}
+              />
+            ) : null}
+            {visualEvents.result ? (
+              <div
+                className={`result-burst result-burst-${visualEvents.result.tone}`}
+                key={visualEvents.result.key}
+              >
+                {visualEvents.result.text}
+              </div>
+            ) : null}
             {showingEncounter ? (
               <EncounterPanel
                 bundle={bundle}
                 encounterTextRecord={currentText!}
+                key={visualEvents.sceneKey}
               />
             ) : null}
 
-            {showingReward ? <RewardPanel /> : null}
+            {showingReward ? <RewardPanel key={visualEvents.sceneKey} /> : null}
 
             {showingComplete ? (
               <CompletePanel
                 bundle={bundle}
                 busy={busy}
+                key={visualEvents.sceneKey}
                 onRestart={onRestart}
               />
             ) : null}
           </div>
 
-          <div className="command-row">
+          <div className={`command-row ${busy ? "command-row-busy" : ""}`}>
             {showingEncounter
               ? statIds.map((stat) => (
                   <ChoiceSlotCard
@@ -396,6 +505,7 @@ function GameConsole({
                     bundle={bundle}
                     encounterTextRecord={currentText!}
                     key={stat}
+                    pendingAction={pendingAction}
                     stat={stat}
                     onChoose={onChooseStat}
                   />
@@ -408,6 +518,7 @@ function GameConsole({
                     busy={busy}
                     bundle={bundle}
                     key={`reward-${reward.index}`}
+                    pendingAction={pendingAction}
                     reward={reward}
                     onTake={onReward}
                   />
@@ -431,7 +542,7 @@ function GameConsole({
       <div className="bottom-row">
         <section className="status-section">
           <h2>Status</h2>
-          <StatsPanel bundle={bundle} />
+          <StatsPanel bundle={bundle} visualEvents={visualEvents} />
         </section>
 
         <footer className="inventory-section">
@@ -440,13 +551,18 @@ function GameConsole({
             bundle={bundle}
             busy={busy}
             inventoryIds={inventoryIds}
+            pendingAction={pendingAction}
+            visualEvents={visualEvents}
             onEquip={onEquip}
           />
         </footer>
 
         <section className="log-section">
           <h2>Log</h2>
-          <HistoryPanel logs={bundle.recentChoices} />
+          <HistoryPanel
+            latestLogIndex={visualEvents.latestLogIndex}
+            logs={bundle.recentChoices}
+          />
         </section>
       </div>
     </section>
@@ -458,16 +574,21 @@ function ChoiceSlotCard({
   busy,
   encounterTextRecord,
   onChoose,
+  pendingAction,
   stat,
 }: {
   bundle: RunBundle;
   busy: boolean;
   encounterTextRecord: ReturnType<typeof getEncounterText>;
   onChoose: (stat: StatId) => void;
+  pendingAction: PendingAction | null;
   stat: StatId;
 }) {
   const option = encounterTextRecord.options[stat];
   const forecast = bundle.forecasts![stat];
+  const isSelected =
+    pendingAction?.kind === "choice" && pendingAction.stat === stat;
+  const isMuted = busy && pendingAction?.kind === "choice" && !isSelected;
   const outcomeLines = [
     forecast.statGainOnSuccess > 0
       ? {
@@ -493,7 +614,14 @@ function ChoiceSlotCard({
 
   return (
     <button
-      className="choice-card"
+      className={[
+        "choice-card",
+        `choice-card-${stat}`,
+        isSelected ? "choice-card-selected" : "",
+        isMuted ? "choice-card-muted" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       disabled={busy}
       onClick={() => onChoose(stat)}
       type="button"
@@ -526,18 +654,24 @@ function RewardSlotCard({
   bundle,
   busy,
   onTake,
+  pendingAction,
   reward,
 }: {
   bundle: RunBundle;
   busy: boolean;
   onTake: (reward: RewardOfferView, equipNow: boolean) => void;
+  pendingAction: PendingAction | null;
   reward: RewardOfferView;
 }) {
   const item = getItemView(bundle, reward.itemId);
   const text = getItemText(reward.itemId);
+  const isSelected =
+    pendingAction?.kind === "reward" && pendingAction.rewardIndex === reward.index;
 
   return (
-    <article className="reward-card">
+    <article
+      className={`reward-card ${isSelected ? "reward-card-selected" : ""}`}
+    >
       <p className="reward-label">{text.name}</p>
       <p className="reward-meta">
         {slotLabels[item.slot]} / tier {item.tier}
@@ -628,7 +762,13 @@ function ShellOptionsPanel({
   );
 }
 
-function StatsPanel({ bundle }: { bundle: RunBundle }) {
+function StatsPanel({
+  bundle,
+  visualEvents,
+}: {
+  bundle: RunBundle;
+  visualEvents: RunVisualEvents;
+}) {
   return (
     <section aria-label="Character stats" className="stats-panel">
       <div className="stat-grid">
@@ -643,7 +783,16 @@ function StatsPanel({ bundle }: { bundle: RunBundle }) {
           ].filter(Boolean);
 
           return (
-            <div className={`stat-row stat-row-${stat}`} key={stat}>
+            <div
+              className={[
+                "stat-row",
+                `stat-row-${stat}`,
+                visualEvents.changedStats.has(stat) ? "stat-row-changed" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              key={stat}
+            >
               <span className="stat-copy">
                 <strong>{statLabels[stat]}</strong>
                 {details.length > 0 ? <span>{details.join(" / ")}</span> : null}
@@ -657,7 +806,13 @@ function StatsPanel({ bundle }: { bundle: RunBundle }) {
   );
 }
 
-function SceneHud({ bundle }: { bundle: RunBundle }) {
+function SceneHud({
+  bundle,
+  visualEvents,
+}: {
+  bundle: RunBundle;
+  visualEvents: RunVisualEvents;
+}) {
   const healthPercent = getHealthPercent(bundle);
   const metrics = [
     ["LVL", String(bundle.run.level)],
@@ -668,13 +823,30 @@ function SceneHud({ bundle }: { bundle: RunBundle }) {
   return (
     <section aria-label="Run status" className="scene-hud">
       {metrics.map(([label, value]) => (
-        <div className="scene-hud-chip" key={label}>
+        <div
+          className={[
+            "scene-hud-chip",
+            label === "LVL" && visualEvents.levelChanged
+              ? "scene-hud-chip-changed"
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          key={label}
+        >
           <span>{label}</span>
           <strong>{value}</strong>
         </div>
       ))}
       <div
-        className="health-meter scene-hud-health"
+        className={[
+          "health-meter",
+          "scene-hud-health",
+          visualEvents.healthChanged ? "scene-hud-health-changed" : "",
+          visualEvents.healthLost ? "scene-hud-health-lost" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
         aria-label={`Health ${bundle.character.health} of ${bundle.character.maxHealth}`}
       >
         <div className="health-meter-label">
@@ -691,7 +863,13 @@ function SceneHud({ bundle }: { bundle: RunBundle }) {
   );
 }
 
-function EquipmentPanel({ bundle }: { bundle: RunBundle }) {
+function EquipmentPanel({
+  bundle,
+  visualEvents,
+}: {
+  bundle: RunBundle;
+  visualEvents: RunVisualEvents;
+}) {
   return (
     <section className="equipment-panel" aria-label="Equipped items">
       <div className="equipment-loadout">
@@ -701,7 +879,18 @@ function EquipmentPanel({ bundle }: { bundle: RunBundle }) {
           const text = itemId > 0 ? getItemText(itemId) : null;
 
           return (
-            <div className="equipment-slot-card" key={slot}>
+            <div
+              className={[
+                "equipment-slot-card",
+                item ? "equipment-slot-card-filled" : "",
+                visualEvents.changedEquipmentSlots.has(slot)
+                  ? "equipment-slot-card-changed"
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              key={slot}
+            >
               <ItemIcon itemId={itemId} size="lg" />
               <div className="equipment-slot-copy">
                 <strong>{text?.name ?? "Empty"}</strong>
@@ -725,11 +914,15 @@ function InventoryPanel({
   busy,
   inventoryIds,
   onEquip,
+  pendingAction,
+  visualEvents,
 }: {
   bundle: RunBundle;
   busy: boolean;
   inventoryIds: number[];
   onEquip: (itemId: number) => void;
+  pendingAction: PendingAction | null;
+  visualEvents: RunVisualEvents;
 }) {
   const slots = Array.from(
     { length: inventorySlotCount },
@@ -755,13 +948,24 @@ function InventoryPanel({
           const equipped = Object.values(bundle.character.equipment).includes(
             itemId,
           );
+          const isPendingEquip =
+            pendingAction?.kind === "equip" && pendingAction.itemId === itemId;
 
           return (
             <button
               aria-label={
                 equipped ? `${text.name} is equipped` : `Equip ${text.name}`
               }
-              className={`inventory-item ${equipped ? "inventory-item-equipped" : ""}`}
+              className={[
+                "inventory-item",
+                equipped ? "inventory-item-equipped" : "",
+                isPendingEquip ? "inventory-item-pending" : "",
+                visualEvents.newInventoryItemIds.has(itemId)
+                  ? "inventory-item-new"
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               disabled={busy || equipped || bundle.run.status === "lost"}
               key={itemId}
               onClick={() => onEquip(itemId)}
@@ -864,7 +1068,13 @@ function CompletePanel({
   );
 }
 
-function HistoryPanel({ logs }: { logs: ChoiceLogView[] }) {
+function HistoryPanel({
+  latestLogIndex,
+  logs,
+}: {
+  latestLogIndex: number | null;
+  logs: ChoiceLogView[];
+}) {
   if (logs.length === 0) return <p className="empty-copy">No actions yet.</p>;
 
   return (
@@ -872,7 +1082,10 @@ function HistoryPanel({ logs }: { logs: ChoiceLogView[] }) {
       {logs.map((log) => {
         const encounter = getEncounterText(log.encounterId);
         return (
-          <li key={`${log.runId}-${log.index}`}>
+          <li
+            className={log.index === latestLogIndex ? "run-log-entry-new" : ""}
+            key={`${log.runId}-${log.index}`}
+          >
             <span>L{log.level}</span>
             {encounter.title}: {log.success ? "success" : "failure"} with{" "}
             {statLabels[log.stat]} ({log.effectiveStat}/{log.difficulty})
@@ -887,6 +1100,149 @@ function HistoryPanel({ logs }: { logs: ChoiceLogView[] }) {
       })}
     </ol>
   );
+}
+
+function useRunVisualEvents(bundle: RunBundle): RunVisualEvents {
+  const previousRef = useRef<RunBundle | null>(null);
+  const events = useMemo(
+    () => createRunVisualEvents(previousRef.current, bundle),
+    [bundle],
+  );
+
+  useEffect(() => {
+    previousRef.current = bundle;
+  }, [bundle]);
+
+  return events;
+}
+
+function createRunVisualEvents(
+  previous: RunBundle | null,
+  current: RunBundle,
+): RunVisualEvents {
+  const sceneKey = getSceneKey(current);
+  const emptyEvents: RunVisualEvents = {
+    changedEquipmentSlots: new Set(),
+    changedStats: new Set(),
+    healthChanged: false,
+    healthLost: false,
+    latestLogIndex: null,
+    levelChanged: false,
+    newInventoryItemIds: new Set(),
+    result: null,
+    sceneKey,
+  };
+
+  if (!previous || previous.run.id !== current.run.id) {
+    return emptyEvents;
+  }
+
+  const changedStats = new Set<StatId>();
+  statIds.forEach((stat) => {
+    if (
+      previous.character.baseStats[stat] !== current.character.baseStats[stat] ||
+      previous.character.strain[stat] !== current.character.strain[stat] ||
+      getEffectiveStat(previous, stat) !== getEffectiveStat(current, stat)
+    ) {
+      changedStats.add(stat);
+    }
+  });
+
+  const changedEquipmentSlots = new Set<EquipmentSlot>();
+  equipmentSlots.forEach((slot) => {
+    if (previous.character.equipment[slot] !== current.character.equipment[slot]) {
+      changedEquipmentSlots.add(slot);
+    }
+  });
+
+  const previousInventory = new Set(
+    inventoryItemIds(previous.character.inventoryBits),
+  );
+  const newInventoryItemIds = new Set(
+    inventoryItemIds(current.character.inventoryBits).filter(
+      (itemId) => !previousInventory.has(itemId),
+    ),
+  );
+
+  const latestLogIndex = getLatestNewLogIndex(previous, current);
+  const latestLog =
+    latestLogIndex === null
+      ? null
+      : current.recentChoices.find((log) => log.index === latestLogIndex) ?? null;
+
+  return {
+    changedEquipmentSlots,
+    changedStats,
+    healthChanged: previous.character.health !== current.character.health,
+    healthLost: current.character.health < previous.character.health,
+    latestLogIndex,
+    levelChanged: previous.run.level !== current.run.level,
+    newInventoryItemIds,
+    result: latestLog
+      ? {
+          key: `${current.run.id}-${latestLog.index}-${current.character.health}`,
+          text: getChoiceResultText(latestLog),
+          tone: latestLog.success ? "good" : "bad",
+        }
+      : null,
+    sceneKey,
+  };
+}
+
+function getSceneKey(bundle: RunBundle): string {
+  const encounterId = bundle.currentEncounter?.encounterId ?? "none";
+  return [
+    bundle.run.id.toString(),
+    bundle.run.phase,
+    bundle.run.status,
+    bundle.run.level,
+    bundle.run.encounterIndex,
+    encounterId,
+    bundle.run.rewardCount,
+  ].join("-");
+}
+
+function getLatestNewLogIndex(
+  previous: RunBundle,
+  current: RunBundle,
+): number | null {
+  const previousLatest = Math.max(
+    -1,
+    ...previous.recentChoices.map((log) => log.index),
+  );
+  const currentLatest = Math.max(
+    -1,
+    ...current.recentChoices.map((log) => log.index),
+  );
+  return currentLatest > previousLatest ? currentLatest : null;
+}
+
+function getChoiceResultText(log: ChoiceLogView): string {
+  if (log.bossDefeated) return "BOSS DEFEATED";
+  if (log.gameEnded && log.success) return "VICTORY";
+  if (log.gameEnded) return "DEFEAT";
+
+  const parts = [log.success ? "SUCCESS" : "FAILURE"];
+  if (log.statGain > 0) {
+    parts.push(`+${log.statGain} ${statShortLabels[log.stat]}`);
+  }
+  if (log.healthDeltaAmount > 0) {
+    parts.push(`${formatDelta(log.healthDeltaSign, log.healthDeltaAmount)} HP`);
+  }
+  return parts.join(" / ");
+}
+
+function getPendingActionLabel(action: PendingAction): string {
+  switch (action.kind) {
+    case "start":
+      return "Starting run...";
+    case "choice":
+      return `Resolving ${choiceStatNames[action.stat]}...`;
+    case "reward":
+      return action.equipNow ? "Equipping reward..." : "Claiming reward...";
+    case "equip":
+      return "Equipping item...";
+  }
 }
 
 function DebugPanel({ bundle }: { bundle: RunBundle }) {
@@ -1031,6 +1387,10 @@ function getEquipmentStatBonus(bundle: RunBundle, stat: StatId): number {
     if (itemId <= 0) return total;
     return total + (getItemView(bundle, itemId).bonuses[stat] ?? 0);
   }, 0);
+}
+
+function getEffectiveStat(bundle: RunBundle, stat: StatId): number {
+  return bundle.character.baseStats[stat] + getEquipmentStatBonus(bundle, stat);
 }
 
 function shortAddress(address: string): string {

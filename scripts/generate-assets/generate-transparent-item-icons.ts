@@ -9,13 +9,21 @@ import {
 } from "./lib/env";
 
 const rootDir = process.cwd();
-const model = process.env.OPENAI_IMAGE_MODEL ?? process.env.IMAGE_MODEL ?? "gpt-image-1";
+const openAiModel =
+  process.env.OPENAI_IMAGE_MODEL ?? process.env.IMAGE_MODEL ?? "gpt-image-1";
+const openRouterImageModel =
+  process.env.OPENROUTER_IMAGE_MODEL ?? "openai/gpt-5-image-mini";
 const generatedSize =
   process.env.OPENAI_ITEM_IMAGE_SIZE ??
+  process.env.OPENROUTER_ITEM_IMAGE_SIZE ??
   process.env.OPENAI_IMAGE_SIZE ??
+  process.env.OPENROUTER_IMAGE_SIZE ??
   "1024x1024";
 const generatedQuality =
-  process.env.OPENAI_IMAGE_QUALITY ?? IMAGE_QUALITY ?? "medium";
+  process.env.OPENAI_IMAGE_QUALITY ??
+  process.env.OPENROUTER_IMAGE_QUALITY ??
+  IMAGE_QUALITY ??
+  "medium";
 const outputSize = Number(process.env.ITEM_ICON_OUTPUT_SIZE ?? 128);
 const outputQuality = Number(process.env.ITEM_ICON_WEBP_QUALITY ?? 82);
 const sourceFormat = "png";
@@ -32,10 +40,13 @@ const promptDir = path.join(
 
 const itemIconStyle = [
   "Create one transparent-background inventory item icon for Gravenhold, a deterministic old-school fantasy progression RPG.",
-  "The image must look like hand-authored low-resolution fantasy game item art: chunky readable silhouette, hard painterly pixel edges, restrained earthy palette, visible dithering, worn materials, no smooth modern rendering.",
+  "The image must look like hand-authored low-resolution fantasy game item art: chunky readable silhouette, hard painterly pixel edges, visible dithering, worn materials, no smooth modern rendering.",
+  "Make the item exciting and collectible at inventory scale: strong material definition, crisp highlights, readable contrast, and one or two tasteful medieval accent colors.",
+  "Use rich but grounded medieval fantasy colors: polished brass, warm gold, tempered steel, crimson leather, deep forest green cloth, sapphire blue enamel, teal glass, amethyst crystal, ivory bone, ember orange, or moonlit silver as appropriate to the item.",
+  "Do not make the item monochrome gray, muddy, dull, or low-contrast. Avoid rainbow colors, neon cyberpunk color, candy colors, plastic shine, and excessive magical glow.",
   "Transparent background only. No stone, wood, parchment, gradient, glow field, vignette, floor, frame, UI slot, border, label, readable text, hands, characters, or scene context.",
   "Show exactly one centered equipment pickup object with generous transparent padding on all sides so it fits inside a square inventory slot.",
-  "Use the same visual language for every item: 3/4 top-down inventory angle, upper-left warm torch highlight, deep muted shadow pixels on the lower-right side of the object, dark mountain-fortress fantasy palette, small readable details, no photorealism, no modern 3D render.",
+  "Use the same visual language for every item: 3/4 top-down inventory angle, upper-left warm torch highlight, clear lower-right shadow pixels, medieval mountain-fortress fantasy palette, small readable details, no photorealism, no modern 3D render.",
   `The final runtime icon will be downscaled to ${outputSize}x${outputSize}; keep the object readable at 48x48 pixels.`,
   "Do not imitate or reference RuneScape, OSRS, Diablo, or any specific existing game asset.",
 ].join(" ");
@@ -98,6 +109,13 @@ type ItemIconAsset = {
   name: string;
 };
 
+type ImageProvider = "openai" | "openrouter";
+
+type ImageReference = {
+  b64Json?: string;
+  url?: string;
+};
+
 function itemAssets(): ItemIconAsset[] {
   return Object.values(itemText).map((item) => ({
     description: item.description,
@@ -137,6 +155,18 @@ function shouldListAssets(): boolean {
   return process.argv.includes("--list");
 }
 
+function imageProvider(): ImageProvider {
+  const rawProvider =
+    getArg("--provider") ?? process.env.ITEM_ICON_IMAGE_PROVIDER ?? "openai";
+  if (rawProvider === "openai" || rawProvider === "openrouter") {
+    return rawProvider;
+  }
+
+  throw new Error(
+    `Unsupported image provider "${rawProvider}". Use "openai" or "openrouter".`,
+  );
+}
+
 function printUsage() {
   console.log(
     `
@@ -146,12 +176,15 @@ Options:
   --list                 Print valid inventory item ids
   --asset <id>           Generate one inventory item id
   --assets <id,id>       Generate a comma-separated list of item ids
+  --provider <provider>  Image backend: openai or openrouter, default openai
   --force                Regenerate existing WebPs
   --write-prompts-only   Write prompt files without API calls
   --help, -h             Show this help
 
 Environment:
   OPENAI_ITEM_IMAGE_SIZE     Source generation size, default ${generatedSize}
+  OPENROUTER_API_KEY         OpenRouter key used with --provider openrouter
+  OPENROUTER_IMAGE_MODEL     OpenRouter image model, default ${openRouterImageModel}
   ITEM_ICON_OUTPUT_SIZE      Final WebP dimensions, default ${outputSize}
   ITEM_ICON_WEBP_QUALITY     Final WebP quality, default ${outputQuality}
 
@@ -172,7 +205,11 @@ function makePrompt(asset: ItemIconAsset): string {
   ].join(" ");
 }
 
-async function generateAsset(apiKey: string, asset: ItemIconAsset) {
+async function generateAsset(
+  provider: ImageProvider,
+  apiKey: string,
+  asset: ItemIconAsset,
+) {
   const prompt = makePrompt(asset);
   const outputPath = path.join(outputDir, `${asset.id}.webp`);
   const sourcePath = path.join(tempDir, `${asset.id}.source.png`);
@@ -195,15 +232,42 @@ async function generateAsset(apiKey: string, asset: ItemIconAsset) {
     return;
   }
 
-  mkdirSync(promptDir, { recursive: true });
-  writeFileSync(promptPath, `${prompt}\n`);
-
   console.log(`generate ${asset.id}: ${asset.name}`);
 
+  try {
+    await generateSourceImage(provider, apiKey, asset.id, prompt, sourcePath);
+    optimizeIcon(sourcePath, outputPath);
+  } finally {
+    rmSync(sourcePath, { force: true });
+  }
+
+  console.log(`wrote ${path.relative(rootDir, outputPath)}`);
+}
+
+async function generateSourceImage(
+  provider: ImageProvider,
+  apiKey: string,
+  assetId: string,
+  prompt: string,
+  sourcePath: string,
+) {
+  const reference =
+    provider === "openrouter"
+      ? await generateWithOpenRouter(apiKey, assetId, prompt)
+      : await generateWithOpenAi(apiKey, assetId, prompt);
+
+  await writeImageReference(reference, assetId, sourcePath);
+}
+
+async function generateWithOpenAi(
+  apiKey: string,
+  assetId: string,
+  prompt: string,
+): Promise<ImageReference> {
   const response = await fetch("https://api.openai.com/v1/images/generations", {
     body: JSON.stringify({
       background: "transparent",
-      model,
+      model: openAiModel,
       output_format: sourceFormat,
       prompt,
       quality: generatedQuality,
@@ -223,7 +287,7 @@ async function generateAsset(apiKey: string, asset: ItemIconAsset) {
     body = JSON.parse(bodyText);
   } catch {
     throw new Error(
-      `OpenAI returned non-JSON response for ${asset.id}: ${bodyText.slice(0, 400)}`,
+      `OpenAI returned non-JSON response for ${assetId}: ${bodyText.slice(0, 400)}`,
     );
   }
 
@@ -233,7 +297,7 @@ async function generateAsset(apiKey: string, asset: ItemIconAsset) {
         ? (body as { error?: { message?: string } }).error?.message
         : bodyText;
     throw new Error(
-      `OpenAI image generation failed for ${asset.id}: ${message ?? bodyText}`,
+      `OpenAI image generation failed for ${assetId}: ${message ?? bodyText}`,
     );
   }
 
@@ -244,27 +308,149 @@ async function generateAsset(apiKey: string, asset: ItemIconAsset) {
 
   if (!image?.b64_json && !image?.url) {
     throw new Error(
-      `OpenAI response for ${asset.id} did not include b64_json or url.`,
+      `OpenAI response for ${assetId} did not include b64_json or url.`,
     );
   }
 
-  try {
-    if (image.b64_json) {
-      writeFileSync(sourcePath, Buffer.from(image.b64_json, "base64"));
-    } else {
-      const imageResponse = await fetch(image.url!);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to download image URL for ${asset.id}.`);
-      }
-      writeFileSync(sourcePath, Buffer.from(await imageResponse.arrayBuffer()));
-    }
+  return { b64Json: image.b64_json, url: image.url };
+}
 
-    optimizeIcon(sourcePath, outputPath);
-  } finally {
-    rmSync(sourcePath, { force: true });
+async function generateWithOpenRouter(
+  apiKey: string,
+  assetId: string,
+  prompt: string,
+): Promise<ImageReference> {
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    body: JSON.stringify({
+      messages: [
+        {
+          content: prompt,
+          role: "user",
+        },
+      ],
+      modalities: ["image", "text"],
+      model: openRouterImageModel,
+      stream: false,
+    }),
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://gravenhold.local",
+      "X-Title": "Gravenhold Item Icon Generator",
+    },
+    method: "POST",
+  });
+
+  const bodyText = await response.text();
+  let body: unknown;
+
+  try {
+    body = JSON.parse(bodyText);
+  } catch {
+    throw new Error(
+      `OpenRouter returned non-JSON response for ${assetId}: ${bodyText.slice(0, 400)}`,
+    );
   }
 
-  console.log(`wrote ${path.relative(rootDir, outputPath)}`);
+  if (!response.ok) {
+    const message =
+      body && typeof body === "object" && "error" in body
+        ? (body as { error?: { message?: string } }).error?.message
+        : bodyText;
+    throw new Error(
+      `OpenRouter image generation failed for ${assetId}: ${message ?? bodyText}`,
+    );
+  }
+
+  const image = extractImageReference(body);
+  if (!image) {
+    throw new Error(
+      `OpenRouter response for ${assetId} did not include an image URL or data URL: ${bodyText.slice(0, 1200)}`,
+    );
+  }
+
+  return image;
+}
+
+function extractImageReference(value: unknown): ImageReference | null {
+  if (!value || typeof value !== "object") return null;
+
+  if ("b64_json" in value && typeof value.b64_json === "string") {
+    return { b64Json: value.b64_json };
+  }
+
+  if ("url" in value && typeof value.url === "string") {
+    return { url: value.url };
+  }
+
+  if ("image_url" in value) {
+    const imageUrl = value.image_url;
+    if (imageUrl && typeof imageUrl === "object") {
+      const nested = extractImageReference(imageUrl);
+      if (nested) return nested;
+    }
+  }
+
+  if ("imageUrl" in value) {
+    const imageUrl = value.imageUrl;
+    if (typeof imageUrl === "string") {
+      return { url: imageUrl };
+    }
+    if (imageUrl && typeof imageUrl === "object") {
+      const nested = extractImageReference(imageUrl);
+      if (nested) return nested;
+    }
+  }
+
+  for (const nested of Object.values(value)) {
+    if (Array.isArray(nested)) {
+      for (const item of nested) {
+        const image = extractImageReference(item);
+        if (image) return image;
+      }
+    } else if (nested && typeof nested === "object") {
+      const image = extractImageReference(nested);
+      if (image) return image;
+    } else if (
+      typeof nested === "string" &&
+      nested.startsWith("data:image/")
+    ) {
+      return { url: nested };
+    }
+  }
+
+  return null;
+}
+
+async function writeImageReference(
+  reference: ImageReference,
+  assetId: string,
+  sourcePath: string,
+) {
+  const url = reference.url;
+  if (reference.b64Json) {
+    writeFileSync(sourcePath, Buffer.from(reference.b64Json, "base64"));
+    return;
+  }
+
+  if (!url) {
+    throw new Error(`No image data found for ${assetId}.`);
+  }
+
+  if (url.startsWith("data:image/")) {
+    const [, base64] = url.split(",", 2);
+    if (!base64) {
+      throw new Error(`Invalid data URL returned for ${assetId}.`);
+    }
+    writeFileSync(sourcePath, Buffer.from(base64, "base64"));
+    return;
+  }
+
+  const imageResponse = await fetch(url);
+  if (!imageResponse.ok) {
+    throw new Error(`Failed to download image URL for ${assetId}.`);
+  }
+  writeFileSync(sourcePath, Buffer.from(await imageResponse.arrayBuffer()));
 }
 
 function optimizeIcon(sourcePath: string, outputPath: string) {
@@ -315,25 +501,31 @@ async function main() {
     );
   }
 
+  const provider = imageProvider();
   const apiKey =
-    OPENAI_API_KEY ??
-    process.env.openai_api_key ??
-    process.env.OpenAI_API_Key ??
-    "";
+    provider === "openrouter"
+      ? process.env.OPENROUTER_API_KEY ?? process.env.openrouter_api_key ?? ""
+      : OPENAI_API_KEY ??
+        process.env.openai_api_key ??
+        process.env.OpenAI_API_Key ??
+        "";
+
   if (!apiKey && !shouldWritePromptsOnly()) {
     throw new Error(
-      "Missing OpenAI API key. Add OPENAI_API_KEY or openai_api_key to .env, or use --write-prompts-only.",
+      provider === "openrouter"
+        ? "Missing OpenRouter API key. Add OPENROUTER_API_KEY to .env, or use --write-prompts-only."
+        : "Missing OpenAI API key. Add OPENAI_API_KEY or openai_api_key to .env, or use --write-prompts-only.",
     );
   }
 
   console.log(
-    `model=${model} source=${generatedSize} sourceQuality=${generatedQuality} output=${outputSize} webpQuality=${outputQuality} assets=${targets.length}`,
+    `provider=${provider} model=${provider === "openrouter" ? openRouterImageModel : openAiModel} source=${generatedSize} sourceQuality=${generatedQuality} output=${outputSize} webpQuality=${outputQuality} assets=${targets.length}`,
   );
   console.log(`images=${path.relative(rootDir, outputDir)}`);
   console.log(`prompts=${path.relative(rootDir, promptDir)}`);
 
   for (const asset of targets) {
-    await generateAsset(apiKey, asset);
+    await generateAsset(provider, apiKey, asset);
   }
 }
 

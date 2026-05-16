@@ -812,33 +812,6 @@ button:disabled {
   padding-right: 0.15rem;
 }
 
-.encounter-title {
-  color: #fff5d8;
-  font-size: 2.2rem;
-  line-height: 1.08;
-  margin-top: 0.6rem;
-  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.72);
-}
-
-.encounter-subtitle {
-  color: rgba(242, 212, 138, 0.9);
-  font-size: 1rem;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  line-height: 1;
-  margin-top: 0.35rem;
-  text-transform: uppercase;
-  font-family: var(--font-display);
-}
-
-.encounter-description {
-  color: rgba(246, 234, 212, 0.84);
-  font-size: 1rem;
-  line-height: 1.7;
-  margin: 0.95rem 0 0;
-  max-width: 56rem;
-}
-
 .choice-label {
   color: #fff3d2;
   font-weight: 900;
@@ -854,32 +827,20 @@ button:disabled {
   text-transform: uppercase;
 }
 
-.reward-panel,
-.complete-panel {
-  padding: 1.2rem;
-}
-
 .loot-title,
 .complete-title {
   color: #fff3d2;
   font-size: 2.3rem;
   line-height: 1.05;
-  margin-top: 0.35rem;
+  margin: 0;
   text-shadow: 0 3px 0 rgba(0, 0, 0, 0.42);
-}
-
-.loot-copy,
-.complete-copy {
-  color: rgba(246, 234, 212, 0.74);
-  line-height: 1.65;
-  margin-top: 0.65rem;
-  max-width: 56rem;
 }
 
 .complete-kicker {
   font-size: 0.86rem;
   font-weight: 900;
   letter-spacing: 0.14em;
+  margin: 0;
   text-transform: uppercase;
 }
 
@@ -892,7 +853,9 @@ button:disabled {
 }
 
 .complete-action {
+  justify-self: center;
   margin-top: 1.25rem;
+  width: auto;
 }
 
 .debug-panel {
@@ -1027,32 +990,27 @@ button:disabled {
   color: rgb(121, 79, 131);
 }
 
-.encounter-scene-header {
+.scene-stage-header {
   align-items: center;
   display: flex;
   gap: 1rem;
   justify-content: center;
-  left: 0.85rem;
-  position: absolute;
-  right: 0.85rem;
   text-align: center;
   text-shadow:
     0 2px 0 rgba(0, 0, 0, 0.72),
     0 0 14px rgba(0, 0, 0, 0.72);
-  top: 0.75rem;
-  z-index: 2;
 }
 
-.encounter-scene-header .encounter-title {
+.scene-stage-header .encounter-title {
   font-size: 1.9rem;
-  margin-top: 0;
+  margin: 0;
   text-shadow:
     0 2px 0 rgba(0, 0, 0, 0.78),
     0 0 12px rgba(0, 0, 0, 0.82),
     0 0 18px rgba(242, 212, 138, 0.22);
 }
 
-.encounter-scene-header .encounter-subtitle {
+.scene-stage-header .encounter-subtitle {
   text-shadow:
     0 1px 0 rgba(0, 0, 0, 0.78),
     0 0 10px rgba(0, 0, 0, 0.74),
@@ -1192,7 +1150,6 @@ button:disabled {
   background-position: center;
   background-size: cover;
   overflow: hidden;
-  padding: 1rem;
   position: relative;
   width: 100%;
 }
@@ -1258,24 +1215,68 @@ button:disabled {
   z-index: 8;
 }
 
+.scene-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1.8rem minmax(0, 1fr) auto;
+  height: 100%;
+  justify-content: center;
+  padding: 0.78rem;
+  row-gap: 0.38rem;
+  text-align: center;
+}
+
+.scene-stage > * {
+  grid-column: 1;
+  min-width: 0;
+}
+
+.scene-stage-header {
+  align-self: start;
+  display: grid;
+  gap: 0.12rem;
+  justify-items: center;
+  min-width: 0;
+}
+
+.scene-event-dock {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 1.75rem;
+  pointer-events: none;
+  position: relative;
+  z-index: 13;
+}
+
+.scene-stage-tactical {
+  align-items: center;
+  display: grid;
+  justify-items: center;
+  min-height: 0;
+}
+
 .result-burst {
   animation: result-burst 1800ms ease-out both;
-  background: rgba(5, 4, 3, 0.78);
-  border: 1px solid rgba(255, 239, 185, 0.42);
+  background:
+    linear-gradient(180deg, rgba(18, 14, 10, 0.9), rgba(3, 3, 2, 0.88)),
+    var(--ui-section-bg), #050403;
+  background-position: center;
+  background-size:
+    auto,
+    96px 96px;
+  border: 1px solid rgba(255, 239, 185, 0.38);
   color: #f9e7ad;
   font-family: var(--font-display);
-  font-size: 1.25rem;
-  left: 50%;
+  font-size: 1.02rem;
   line-height: 1;
-  padding: 0.38rem 0.7rem;
+  min-width: 12rem;
   pointer-events: none;
-  position: absolute;
+  padding: 0.36rem 0.68rem;
+  position: relative;
   text-align: center;
   text-shadow: 0 2px 0 #000;
-  top: 50%;
-  transform: translate(-50%, -50%);
   white-space: nowrap;
-  z-index: 12;
 }
 
 .result-burst-good {
@@ -1295,14 +1296,10 @@ button:disabled {
   font-family: var(--font-body);
   font-size: 0.82rem;
   font-weight: 800;
-  left: auto;
   letter-spacing: 0.08em;
+  min-width: 10rem;
   padding: 0.28rem 0.48rem;
-  right: 0.86rem;
   text-transform: uppercase;
-  top: 3.55rem;
-  transform: none;
-  z-index: 13;
 }
 
 .scene-panel::after {
@@ -1327,7 +1324,6 @@ button:disabled {
 .reward-panel,
 .complete-panel {
   animation: panel-reveal 360ms ease-out both;
-  align-items: center;
   background:
     radial-gradient(
       circle at 50% 32%,
@@ -1335,41 +1331,19 @@ button:disabled {
       transparent 17rem
     ),
     linear-gradient(180deg, rgba(18, 14, 10, 0.36), rgba(5, 4, 3, 0.72));
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
 }
 
-.reward-panel {
-  justify-content: flex-start;
-  padding: 1rem 1.2rem 0.85rem;
+.reward-panel .scene-stage,
+.complete-panel .scene-stage {
+  align-content: center;
 }
 
 .reward-panel .game-kicker {
-  margin-top: 0.2rem;
+  margin: 0;
 }
 
-.reward-panel .loot-copy {
-  background: linear-gradient(
-    180deg,
-    rgba(10, 8, 6, 0.24),
-    rgba(3, 3, 2, 0.54)
-  );
-  color: rgba(255, 246, 224, 0.88);
-  line-height: 1.3;
-  margin-top: auto;
-  max-width: 46rem;
-  padding: 0.42rem 0.7rem;
-  text-shadow: 0 2px 0 #000;
-}
-
-.encounter-scene-header {
-  justify-content: center;
-  text-align: center;
-}
-
-.scene-panel .encounter-description {
+.scene-stage-description {
+  align-self: end;
   animation: scene-copy-enter 460ms ease-out 120ms both;
   background: linear-gradient(
     180deg,
@@ -1377,19 +1351,12 @@ button:disabled {
     rgba(3, 3, 2, 0.72)
   );
   border: 0;
-  bottom: 0.65rem;
   color: rgba(255, 246, 224, 0.92);
-  display: block;
   font-size: 1.08rem;
-  left: 50%;
   line-height: 1.25;
   margin: 0;
   padding: 0.45rem 0.7rem;
-  position: absolute;
-  text-align: center;
   text-shadow: 0 2px 0 #000;
-  transform: translateX(-50%);
-  width: calc(100% - 1.3rem);
 }
 
 .encounter-title {
@@ -1405,12 +1372,14 @@ button:disabled {
   color: #d6b66b;
   font-size: 0.84rem;
   letter-spacing: 0.16em;
+  margin: 0;
   text-shadow: 0 2px 0 #000;
   text-transform: uppercase;
 }
 
 .choice-preview-overlay {
   animation: choice-preview-enter 160ms ease-out both;
+  align-self: center;
   background:
     linear-gradient(180deg, rgba(18, 14, 10, 0.9), rgba(3, 3, 2, 0.88)),
     var(--ui-section-bg), #050403;
@@ -1422,17 +1391,14 @@ button:disabled {
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.86),
     0 10px 30px rgba(0, 0, 0, 0.38);
-  left: 50%;
-  max-width: calc(100% - 2rem);
-  min-width: 13.5rem;
+  margin: 0 auto;
+  min-width: min(13.5rem, 100%);
   padding: 0.52rem 0.62rem 0.58rem;
   pointer-events: none;
-  position: absolute;
+  position: relative;
   text-align: center;
   text-shadow: 0 2px 0 #000;
-  top: 48%;
-  transform: translate(-50%, -50%);
-  width: 17rem;
+  width: min(17rem, 100%);
   z-index: 4;
 }
 
@@ -2302,11 +2268,11 @@ button:disabled {
 @keyframes scene-copy-enter {
   from {
     opacity: 0;
-    transform: translate(-50%, 0.35rem);
+    transform: translateY(0.35rem);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translateY(0);
   }
 }
 
@@ -2324,12 +2290,12 @@ button:disabled {
   from {
     filter: brightness(0.82);
     opacity: 0;
-    transform: translate(-50%, -46%) scale(0.96);
+    transform: scale(0.96);
   }
   to {
     filter: brightness(1);
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
 }
 
@@ -2372,19 +2338,19 @@ button:disabled {
 @keyframes result-burst {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.86);
+    transform: translateY(-0.16rem) scale(0.96);
   }
   12% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1.04);
+    transform: translateY(0) scale(1.03);
   }
   82% {
     opacity: 1;
-    transform: translate(-50%, -54%) scale(1);
+    transform: translateY(0) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -62%) scale(0.98);
+    transform: translateY(-0.2rem) scale(0.98);
   }
 }
 

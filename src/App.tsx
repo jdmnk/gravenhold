@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
   createGameSession,
@@ -472,6 +480,10 @@ function GameConsole({
   const [hoveredStat, setHoveredStat] = useState<StatId | null>(null);
   const previewStat =
     pendingAction?.kind === "choice" ? pendingAction.stat : hoveredStat;
+  const sceneEvent = {
+    pendingLabel,
+    result: visualEvents.result,
+  };
 
   return (
     <section
@@ -509,34 +521,25 @@ function GameConsole({
                 key={`hit-${visualEvents.result?.key ?? visualEvents.sceneKey}`}
               />
             ) : null}
-            {visualEvents.result ? (
-              <div
-                className={`result-burst result-burst-${visualEvents.result.tone}`}
-                key={visualEvents.result.key}
-              >
-                {visualEvents.result.text}
-              </div>
-            ) : null}
-            {pendingLabel ? (
-              <div className="result-burst result-burst-pending" role="status">
-                {pendingLabel}
-              </div>
-            ) : null}
             {showingEncounter ? (
               <EncounterPanel
                 bundle={bundle}
                 encounterTextRecord={currentText!}
+                event={sceneEvent}
                 key={visualEvents.sceneKey}
                 previewStat={previewStat}
               />
             ) : null}
 
-            {showingReward ? <RewardPanel key={visualEvents.sceneKey} /> : null}
+            {showingReward ? (
+              <RewardPanel event={sceneEvent} key={visualEvents.sceneKey} />
+            ) : null}
 
             {showingComplete ? (
               <CompletePanel
                 bundle={bundle}
                 busy={busy}
+                event={sceneEvent}
                 key={visualEvents.sceneKey}
                 onRestart={onRestart}
               />
@@ -1047,10 +1050,12 @@ function InventoryPanel({
 function EncounterPanel({
   bundle,
   encounterTextRecord,
+  event,
   previewStat,
 }: {
   bundle: RunBundle;
   encounterTextRecord: ReturnType<typeof getEncounterText>;
+  event: SceneEvent;
   previewStat: StatId | null;
 }) {
   const current = bundle.currentEncounter!;
@@ -1060,9 +1065,18 @@ function EncounterPanel({
   const previewOption = previewStat
     ? encounterTextRecord.options[previewStat]
     : null;
+  const tactical =
+    previewStat && previewForecast && previewOption ? (
+      <ChoicePreviewOverlay
+        forecast={previewForecast}
+        optionLabel={previewOption.label}
+        stat={previewStat}
+      />
+    ) : null;
 
   return (
-    <section
+    <SceneStage
+      body={encounterTextRecord.description}
       className={[
         "scene-panel",
         previewStat ? `scene-panel-preview scene-panel-preview-${previewStat}` : "",
@@ -1075,26 +1089,80 @@ function EncounterPanel({
       style={{
         backgroundImage: `linear-gradient(180deg, rgba(17,13,9,0.12), rgba(17,13,9,0.18) 48%, rgba(17,13,9,0.62)), url(${backgroundImage})`,
       }}
-    >
-      <div className="encounter-scene-header">
-        <div>
-          <h2 className="encounter-title">{encounterTextRecord.title}</h2>
-          <p className="encounter-subtitle">
-            {current.category} / {current.difficultyKind}
-          </p>
-        </div>
+      event={event}
+      subtitle={`${current.category} / ${current.difficultyKind}`}
+      subtitleClassName="encounter-subtitle"
+      tactical={tactical}
+      title={encounterTextRecord.title}
+      titleClassName="encounter-title"
+    />
+  );
+}
+
+type SceneEvent = {
+  pendingLabel: string | null;
+  result: RunVisualEvents["result"];
+};
+
+function SceneStage({
+  body,
+  children,
+  className,
+  event,
+  style,
+  subtitle,
+  subtitleClassName,
+  tactical,
+  title,
+  titleClassName,
+}: {
+  body?: string;
+  children?: ReactNode;
+  className: string;
+  event: SceneEvent;
+  style?: CSSProperties;
+  subtitle?: string;
+  subtitleClassName?: string;
+  tactical?: ReactNode;
+  title: string;
+  titleClassName?: string;
+}) {
+  return (
+    <section className={className} style={style}>
+      <div className="scene-stage">
+        <header className="scene-stage-header">
+          <h2 className={titleClassName}>{title}</h2>
+          {subtitle ? <p className={subtitleClassName}>{subtitle}</p> : null}
+        </header>
+
+        <SceneEventDock event={event} />
+
+        <div className="scene-stage-tactical">{tactical}</div>
+
+        {body ? <p className="scene-stage-description">{body}</p> : null}
+        {children}
       </div>
-
-      {previewStat && previewForecast && previewOption ? (
-        <ChoicePreviewOverlay
-          forecast={previewForecast}
-          optionLabel={previewOption.label}
-          stat={previewStat}
-        />
-      ) : null}
-
-      <p className="encounter-description">{encounterTextRecord.description}</p>
     </section>
+  );
+}
+
+function SceneEventDock({ event }: { event: SceneEvent }) {
+  return (
+    <div className="scene-event-dock">
+      {event.result ? (
+        <div
+          className={`result-burst result-burst-${event.result.tone}`}
+          key={event.result.key}
+        >
+          {event.result.text}
+        </div>
+      ) : null}
+      {event.pendingLabel ? (
+        <div className="result-burst result-burst-pending" role="status">
+          {event.pendingLabel}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -1164,44 +1232,47 @@ function ChoicePreviewOverlay({
   );
 }
 
-function RewardPanel() {
+function RewardPanel({ event }: { event: SceneEvent }) {
   return (
-    <section className="reward-panel">
-      <p className="game-kicker">Reward</p>
-      <h2 className="loot-title">{storyText.levelClearedTitle}</h2>
-      <p className="loot-copy">{storyText.levelClearedDescription}</p>
-    </section>
+    <SceneStage
+      body={storyText.levelClearedDescription}
+      className="reward-panel"
+      event={event}
+      subtitle="Reward"
+      subtitleClassName="game-kicker"
+      title={storyText.levelClearedTitle}
+      titleClassName="loot-title"
+    />
   );
 }
 
 function CompletePanel({
   bundle,
   busy,
+  event,
   onRestart,
 }: {
   bundle: RunBundle;
   busy: boolean;
+  event: SceneEvent;
   onRestart: () => void;
 }) {
   const won = bundle.run.status === "won";
 
   return (
-    <section className="complete-panel">
-      <p
-        className={
-          won
-            ? "complete-kicker complete-kicker-won"
-            : "complete-kicker complete-kicker-lost"
-        }
-      >
-        {won ? "Victory" : "Game Over"}
-      </p>
-      <h2 className="complete-title">
-        {won ? storyText.victoryTitle : storyText.defeatTitle}
-      </h2>
-      <p className="complete-copy">
-        {won ? storyText.victoryDescription : storyText.defeatDescription}
-      </p>
+    <SceneStage
+      body={won ? storyText.victoryDescription : storyText.defeatDescription}
+      className="complete-panel"
+      event={event}
+      subtitle={won ? "Victory" : "Game Over"}
+      subtitleClassName={
+        won
+          ? "complete-kicker complete-kicker-won"
+          : "complete-kicker complete-kicker-lost"
+      }
+      title={won ? storyText.victoryTitle : storyText.defeatTitle}
+      titleClassName="complete-title"
+    >
       <button
         className="game-button game-button-primary complete-action"
         disabled={busy}
@@ -1210,7 +1281,7 @@ function CompletePanel({
       >
         Restart
       </button>
-    </section>
+    </SceneStage>
   );
 }
 

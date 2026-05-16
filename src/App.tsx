@@ -20,6 +20,7 @@ import {
   statIds,
   statLabels,
   statShortLabels,
+  type ChoiceForecastView,
   type ChoiceLogView,
   type EquipmentSlot,
   type ItemView,
@@ -468,6 +469,9 @@ function GameConsole({
   const showingComplete = bundle.run.phase === "complete";
   const visualEvents = useRunVisualEvents(bundle);
   const pendingLabel = pendingAction ? getPendingActionLabel(pendingAction) : null;
+  const [hoveredStat, setHoveredStat] = useState<StatId | null>(null);
+  const previewStat =
+    pendingAction?.kind === "choice" ? pendingAction.stat : hoveredStat;
 
   return (
     <section
@@ -523,6 +527,7 @@ function GameConsole({
                 bundle={bundle}
                 encounterTextRecord={currentText!}
                 key={visualEvents.sceneKey}
+                previewStat={previewStat}
               />
             ) : null}
 
@@ -549,6 +554,7 @@ function GameConsole({
                     pendingAction={pendingAction}
                     stat={stat}
                     onChoose={onChooseStat}
+                    onPreviewStat={setHoveredStat}
                   />
                 ))
               : null}
@@ -615,6 +621,7 @@ function ChoiceSlotCard({
   busy,
   encounterTextRecord,
   onChoose,
+  onPreviewStat,
   pendingAction,
   stat,
 }: {
@@ -622,6 +629,7 @@ function ChoiceSlotCard({
   busy: boolean;
   encounterTextRecord: ReturnType<typeof getEncounterText>;
   onChoose: (stat: StatId) => void;
+  onPreviewStat: (stat: StatId | null) => void;
   pendingAction: PendingAction | null;
   stat: StatId;
 }) {
@@ -630,6 +638,7 @@ function ChoiceSlotCard({
   const isSelected =
     pendingAction?.kind === "choice" && pendingAction.stat === stat;
   const isMuted = busy && pendingAction?.kind === "choice" && !isSelected;
+  const canPreview = !busy;
   const outcomeLines = [
     forecast.statGainOnSuccess > 0
       ? {
@@ -660,11 +669,16 @@ function ChoiceSlotCard({
         `choice-card-${stat}`,
         isSelected ? "choice-card-selected" : "",
         isMuted ? "choice-card-muted" : "",
+        canPreview ? "choice-card-previewable" : "",
       ]
         .filter(Boolean)
         .join(" ")}
       disabled={busy}
+      onBlur={() => onPreviewStat(null)}
       onClick={() => onChoose(stat)}
+      onFocus={() => onPreviewStat(stat)}
+      onMouseEnter={() => onPreviewStat(stat)}
+      onMouseLeave={() => onPreviewStat(null)}
       type="button"
     >
       <p className="choice-label">{option.label}</p>
@@ -1033,16 +1047,31 @@ function InventoryPanel({
 function EncounterPanel({
   bundle,
   encounterTextRecord,
+  previewStat,
 }: {
   bundle: RunBundle;
   encounterTextRecord: ReturnType<typeof getEncounterText>;
+  previewStat: StatId | null;
 }) {
   const current = bundle.currentEncounter!;
   const backgroundImage = encounterBackgroundFor(current.encounterId);
+  const previewForecast =
+    previewStat && bundle.forecasts ? bundle.forecasts[previewStat] : null;
+  const previewOption = previewStat
+    ? encounterTextRecord.options[previewStat]
+    : null;
 
   return (
     <section
-      className="scene-panel"
+      className={[
+        "scene-panel",
+        previewStat ? `scene-panel-preview scene-panel-preview-${previewStat}` : "",
+        current.difficultyKind === "boss" || current.source === "boss"
+          ? "scene-panel-boss"
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={{
         backgroundImage: `linear-gradient(180deg, rgba(17,13,9,0.12), rgba(17,13,9,0.18) 48%, rgba(17,13,9,0.62)), url(${backgroundImage})`,
       }}
@@ -1050,12 +1079,88 @@ function EncounterPanel({
       <div className="encounter-scene-header">
         <div>
           <h2 className="encounter-title">{encounterTextRecord.title}</h2>
-          <p className="encounter-subtitle">{current.category}</p>
+          <p className="encounter-subtitle">
+            {current.category} / {current.difficultyKind}
+          </p>
         </div>
       </div>
 
+      {previewStat && previewForecast && previewOption ? (
+        <ChoicePreviewOverlay
+          forecast={previewForecast}
+          optionLabel={previewOption.label}
+          stat={previewStat}
+        />
+      ) : null}
+
       <p className="encounter-description">{encounterTextRecord.description}</p>
     </section>
+  );
+}
+
+function ChoicePreviewOverlay({
+  forecast,
+  optionLabel,
+  stat,
+}: {
+  forecast: ChoiceForecastView;
+  optionLabel: string;
+  stat: StatId;
+}) {
+  const outcome = forecast.success ? "Likely success" : "Failure risk";
+  const payoff =
+    forecast.winsOnSuccess
+      ? "Victory"
+      : forecast.opensRewardOnSuccess
+        ? "Reward opens"
+        : forecast.statGainOnSuccess > 0
+          ? `+${forecast.statGainOnSuccess} ${statShortLabels[stat]}`
+          : "No growth";
+  const danger = forecast.success
+    ? forecast.approach === "strained"
+      ? "Strained"
+      : forecast.approach
+    : forecast.wouldLoseOnFailure
+      ? "Defeat if failed"
+      : `-${forecast.healthLossOnFailure} HP`;
+
+  return (
+    <aside
+      aria-label={`${choiceStatNames[stat]} option preview`}
+      className={`choice-preview-overlay choice-preview-overlay-${stat}`}
+    >
+      <div className="choice-preview-heading">
+        <span>{choiceStatNames[stat]}</span>
+        <strong>{optionLabel}</strong>
+      </div>
+      <div className="choice-preview-check">
+        <span>Check</span>
+        <strong>
+          {forecast.effectiveStat}/{forecast.difficulty}
+        </strong>
+      </div>
+      <div className="choice-preview-lines">
+        <span
+          className={
+            forecast.success
+              ? "choice-preview-line-good"
+              : "choice-preview-line-bad"
+          }
+        >
+          {outcome}
+        </span>
+        <span className="choice-preview-line-good">{payoff}</span>
+        <span
+          className={
+            forecast.success && forecast.approach !== "strained"
+              ? "choice-preview-line-muted"
+              : "choice-preview-line-risk"
+          }
+        >
+          {danger}
+        </span>
+      </div>
+    </aside>
   );
 }
 

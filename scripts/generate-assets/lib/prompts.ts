@@ -1,15 +1,16 @@
 import type { ImageAssetDef } from "./types";
 
 const GLOBAL_STYLE = [
-  "Visual target: old-school low-poly fantasy RPG, early 2000s browser MMORPG atmosphere, chunky readable silhouettes, hand-painted low-resolution texture feel, warm torchlight, worn parchment, carved stone, aged wood, brass trim.",
+  "Visual target: early 1990s VGA horror RPG pixel art, low-resolution painted pixel look, chunky pixels, visible hand dithering, limited muted palette, black/brown/gray/dirty moss tones, grim dark fantasy atmosphere, old PC adventure/RPG feel.",
   "Original fantasy art direction only. Do not copy or reference any existing game, brand, logo, character, UI, or recognizable asset.",
-  "Game-ready asset, readable at small sizes, cohesive muted earth palette with amber highlights and cool shadow contrast.",
+  "Game-ready asset, readable at small sizes, cohesive muted earth palette with faint amber highlights and cold shadow contrast.",
+  "Avoid photorealism, modern concept art, smooth gradients, anime, cartoon, 3D render, clean high-fantasy polish, glossy modern lighting, watermark, logos, readable text.",
   "No text, no letters, no UI labels, no watermark, no signature, no modern objects.",
 ].join(" ");
 
 const BACKGROUND_SUFFIX = [
   GLOBAL_STYLE,
-  "Wide encounter backdrop with strong center readability for overlaid RPG UI.",
+  "Wide 3:2 scene with strong center readability for overlaid RPG UI.",
   "Layered depth: foreground frame elements at edges, midground subject, distant misty background.",
   "No characters unless explicitly requested. Full-bleed image, no border, no frame.",
 ].join(" ");

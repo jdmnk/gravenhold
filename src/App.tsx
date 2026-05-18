@@ -14,6 +14,7 @@ import {
 } from "@/lib/chain/account/session";
 import {
   encounterBackgroundFor,
+  gameOverBackground,
   itemIconFor,
   levelClearedBackground,
 } from "@/lib/assets/gameAssets";
@@ -998,17 +999,23 @@ function CompletePanel({
   onRestart: () => void;
 }) {
   const won = bundle.run.status === "won";
+  const background = won ? levelClearedBackground : gameOverBackground;
 
   return (
     <section aria-label="Complete" className="complete-panel">
-      <div className="panel-heading">
-        <div>
-          <h2>{won ? storyText.victoryTitle : storyText.defeatTitle}</h2>
-          <p>
-            {won ? storyText.victoryDescription : storyText.defeatDescription}
-          </p>
+      <div
+        className="complete-art"
+        style={{ backgroundImage: `url(${background})` }}
+      >
+        <div className="complete-copy">
+          <div>
+            <h2>{won ? storyText.victoryTitle : storyText.defeatTitle}</h2>
+            <p>
+              {won ? storyText.victoryDescription : storyText.defeatDescription}
+            </p>
+          </div>
+          {latestLog ? <LatestResultBadge log={latestLog} /> : null}
         </div>
-        {latestLog ? <LatestResultBadge log={latestLog} /> : null}
       </div>
       <button disabled={busy} onClick={onRestart} type="button">
         Restart

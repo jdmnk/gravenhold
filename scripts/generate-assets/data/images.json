@@ -35,6 +35,15 @@
       "format": "webp",
       "description": "a quiet fantasy RPG victory rest scene after a dangerous level is cleared, opened path beyond a ruined stone threshold, warm torchlight and sunrise glow, scattered spent gear and banners, calm readable center space for reward UI overlays, no characters",
       "intendedUse": "generic level cleared backdrop shown before reward selection"
+    },
+    {
+      "id": "game-over",
+      "filename": "game-over.webp",
+      "category": "backgrounds",
+      "size": "1536x1024",
+      "format": "webp",
+      "description": "a solemn fantasy RPG defeat scene in a ruined stronghold corridor after a failed run, extinguished torch smoke, cracked stone floor, dropped shield and broken travel gear, closed path fading into cold mist, readable center space for end-state UI overlays, no characters",
+      "intendedUse": "generic game over backdrop shown after run defeat"
     }
   ],
   "items": [

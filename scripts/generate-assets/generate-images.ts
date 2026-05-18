@@ -9,11 +9,15 @@ import {
   type ImageCategory,
 } from "./lib/types";
 import {
-  IMAGE_MODEL,
   IMAGE_QUALITY,
   MAX_CONCURRENCY,
   REQUEST_DELAY_MS,
 } from "./lib/env";
+import {
+  imageModel,
+  imageProvider,
+  type ImageProvider,
+} from "./lib/llm-image-client";
 import { buildPrompt } from "./lib/prompts";
 
 const OUTPUT_ROOT = resolve(__dirname, "../../public/assets/game");
@@ -23,7 +27,7 @@ type CliOptions = {
   dryRun: boolean;
   force: boolean;
   id: string | null;
-  provider: "openai" | "openrouter";
+  provider: ImageProvider;
 };
 
 function parseArgs(): CliOptions {
@@ -33,7 +37,7 @@ function parseArgs(): CliOptions {
     dryRun: false,
     force: false,
     id: null,
-    provider: "openai",
+    provider: imageProvider(),
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -53,11 +57,7 @@ function parseArgs(): CliOptions {
       opts.id = args[index + 1];
       index += 1;
     } else if (arg === "--provider" && args[index + 1]) {
-      const provider = args[index + 1];
-      if (provider !== "openai" && provider !== "openrouter") {
-        throw new Error(`Unknown provider ${provider}. Valid: openai, openrouter`);
-      }
-      opts.provider = provider;
+      opts.provider = imageProvider(args[index + 1]);
       index += 1;
     } else if (arg === "--help" || arg === "-h") {
       printUsage();
@@ -78,7 +78,7 @@ Options:
   --dry-run               Print planned assets and prompts without API calls
   --category <category>   Generate one category: ${IMAGE_CATEGORIES.join(", ")}
   --id <asset-id>         Generate one asset by id
-  --provider <provider>   Image backend: openai or openrouter, default openai
+  --provider <provider>   Image backend: openrouter or openai, default openrouter
   --force                 Regenerate existing files
   --help, -h              Show this help
 
@@ -125,7 +125,7 @@ async function processAsset(asset: ImageAssetDef, opts: CliOptions): Promise<boo
   }
 
   console.log(`  GEN   ${asset.category}/${asset.filename} (${asset.size})`);
-  const { generateImage } = await import("./lib/openai-image-client");
+  const { generateImage } = await import("./lib/llm-image-client");
   await generateImage({
     format: asset.format,
     outputPath: out,
@@ -148,7 +148,7 @@ async function run() {
   console.log("Gravenhold Image Generator");
   console.log(`  queued: ${assets.length}${opts.dryRun ? " (dry run)" : ""}`);
   console.log(`  output: ${OUTPUT_ROOT}`);
-  console.log(`  model:  ${displayModel(opts.provider)}`);
+  console.log(`  model:  ${imageModel(opts.provider)}`);
   console.log(`  provider: ${opts.provider}`);
   console.log(`  quality: ${IMAGE_QUALITY}`);
   console.log("");
@@ -173,14 +173,6 @@ async function run() {
 
   console.log("");
   console.log(`Complete: ${generated} generated, ${skipped} skipped`);
-}
-
-function displayModel(provider: CliOptions["provider"]): string {
-  if (provider === "openrouter") {
-    return process.env.OPENROUTER_IMAGE_MODEL ?? "openai/gpt-5-image-mini";
-  }
-
-  return IMAGE_MODEL;
 }
 
 function sleep(ms: number) {

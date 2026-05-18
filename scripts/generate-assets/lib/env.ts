@@ -8,8 +8,12 @@ loadDotEnv(resolve(ROOT, ".env.local"));
 loadDotEnv(resolve(ROOT, "src/.env"));
 
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? "";
-export const IMAGE_MODEL = process.env.IMAGE_MODEL ?? "gpt-image-1.5";
-export const IMAGE_QUALITY = process.env.IMAGE_QUALITY ?? "medium";
+export const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY ?? "";
+export const IMAGE_PROVIDER = process.env.IMAGE_PROVIDER ?? "openrouter";
+export const IMAGE_MODEL = process.env.IMAGE_MODEL ?? "gpt-image-1";
+export const OPENROUTER_IMAGE_MODEL =
+  process.env.OPENROUTER_IMAGE_MODEL ?? "openai/gpt-5-image-mini";
+export const IMAGE_QUALITY = process.env.IMAGE_QUALITY ?? "low";
 export const REQUEST_DELAY_MS = Number(process.env.IMAGE_REQUEST_DELAY_MS ?? 1200);
 export const MAX_CONCURRENCY = Number(process.env.IMAGE_MAX_CONCURRENCY ?? 1);
 export const PIXELLAB_API_BASE_URL = process.env.PIXELLAB_API_BASE_URL ?? "https://api.pixellab.ai/v2";
@@ -24,6 +28,13 @@ export function requireOpenAiKey(): string {
     throw new Error("OPENAI_API_KEY is not set. Add it to .env at the project root.");
   }
   return OPENAI_API_KEY;
+}
+
+export function requireOpenRouterKey(): string {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is not set. Add it to .env at the project root.");
+  }
+  return OPENROUTER_API_KEY;
 }
 
 export function requirePixellabToken(): string {

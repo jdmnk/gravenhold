@@ -638,13 +638,16 @@ img {
 .reward-panel,
 .complete-panel {
   display: grid;
-  align-content: start;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: normal;
   gap: 8px;
 }
 
-.reward-art {
+.reward-art,
+.complete-art {
   position: relative;
-  min-height: clamp(180px, 25vh, 320px);
+  height: 100%;
+  min-height: clamp(276px, 41vh, 504px);
   border: 3px solid #2d2119;
   background-color: #17120f;
   background-position: center;
@@ -653,19 +656,21 @@ img {
   overflow: hidden;
 }
 
-.reward-art::after {
+.reward-art::after,
+.complete-art::after {
   position: absolute;
   inset: 0;
   content: "";
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(13, 9, 8, 0.62));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(13, 9, 8, 0.56));
   pointer-events: none;
 }
 
-.reward-copy {
+.reward-copy,
+.complete-copy {
   position: absolute;
   z-index: 1;
-  left: 16px;
-  right: 16px;
+  left: 18px;
+  right: 18px;
   bottom: 14px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -673,12 +678,14 @@ img {
   align-items: end;
 }
 
-.reward-copy h2 {
+.reward-copy h2,
+.complete-copy h2 {
   color: #ffd37a;
   text-shadow: 0 3px 0 #1b0d08;
 }
 
-.reward-copy p {
+.reward-copy p,
+.complete-copy p {
   max-width: 760px;
   color: #f1d9af;
   text-shadow: 0 2px 0 #1b0d08;
@@ -1089,6 +1096,11 @@ img {
     display: block;
   }
 
+  .reward-panel,
+  .complete-panel {
+    display: block;
+  }
+
   .choice-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1102,6 +1114,11 @@ img {
   }
 
   .encounter-art {
+    min-height: 216px;
+  }
+
+  .reward-art,
+  .complete-art {
     min-height: 216px;
   }
 
@@ -1138,6 +1155,11 @@ img {
   }
 
   .encounter-art {
+    min-height: 180px;
+  }
+
+  .reward-art,
+  .complete-art {
     min-height: 180px;
   }
 

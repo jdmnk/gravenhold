@@ -420,7 +420,7 @@ img {
 
 .progression-panel li {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px;
   align-items: center;
   min-height: 28px;
@@ -428,6 +428,13 @@ img {
   border: 1px solid #3d2c22;
   color: #9f8068;
   background: rgba(12, 9, 8, 0.42);
+}
+
+.progression-panel strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .progression-panel li.is-cleared {
@@ -444,9 +451,38 @@ img {
   border-color: #734033;
 }
 
-.progression-panel em {
-  color: #d0a25a;
-  font-style: normal;
+.progression-markers {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.progression-marker {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border: 1px solid #d0a25a;
+  background: rgba(208, 162, 90, 0.18);
+}
+
+.progression-marker:focus-visible {
+  outline: 2px solid #f0dd9b;
+  outline-offset: 2px;
+}
+
+.marker-boss {
+  border-color: #c4614d;
+  background: #6f2f27;
+}
+
+.marker-current {
+  border-color: #ffe3a3;
+  background: #c99338;
+}
+
+.marker-cleared {
+  border-color: #c3b17c;
+  background: #6f6b42;
 }
 
 .encounter-panel,

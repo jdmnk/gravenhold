@@ -661,6 +661,7 @@ function ProgressionList({ bundle }: { bundle: RunBundle }) {
 
           return (
             <li
+              aria-label={`${level}. ${text.title}${bossEncounterId ? ", boss" : ""}${current ? ", current" : ""}${completed ? ", cleared" : ""}`}
               className={[
                 completed ? "is-cleared" : "",
                 current ? "is-current" : "",
@@ -669,18 +670,52 @@ function ProgressionList({ bundle }: { bundle: RunBundle }) {
                 .filter(Boolean)
                 .join(" ")}
               key={level}
+              title={[
+                bossEncounterId ? "Boss" : "",
+                current ? "Current" : "",
+                completed ? "Cleared" : "",
+              ]
+                .filter(Boolean)
+                .join(" / ")}
             >
               <strong>
                 {level}. {text.title}
               </strong>
-              {bossEncounterId ? <em>Boss</em> : null}
-              {current ? <em>Current</em> : null}
-              {completed ? <em>Cleared</em> : null}
+              <span className="progression-markers">
+                {bossEncounterId ? (
+                  <ProgressionMarker className="marker-boss" label="Boss" />
+                ) : null}
+                {current ? (
+                  <ProgressionMarker className="marker-current" label="Current" />
+                ) : null}
+                {completed ? (
+                  <ProgressionMarker className="marker-cleared" label="Cleared" />
+                ) : null}
+              </span>
             </li>
           );
         })}
       </ol>
     </section>
+  );
+}
+
+function ProgressionMarker({
+  className,
+  label,
+}: {
+  className: string;
+  label: string;
+}) {
+  return (
+    <DescriptionTooltip content={label}>
+      <span
+        aria-label={label}
+        className={`progression-marker ${className}`}
+        role="img"
+        tabIndex={0}
+      />
+    </DescriptionTooltip>
   );
 }
 

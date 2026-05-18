@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import * as Popover from "@radix-ui/react-popover";
+import * as Tooltip from "@radix-ui/react-tooltip";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   createGameSession,
@@ -289,43 +297,45 @@ export default function Home() {
   const showBootLoader = !initialLoadComplete && !bundle;
 
   return (
-    <main className="app-root">
-      {showBootLoader ? <BootLoaderPanel network={network} /> : null}
+    <Tooltip.Provider delayDuration={250} skipDelayDuration={150}>
+      <main className="app-root">
+        {showBootLoader ? <BootLoaderPanel network={network} /> : null}
 
-      {!showBootLoader && !bundle ? (
-        <StartPanel
-          busy={busy}
-          connectingSession={connectingSession}
-          network={network}
-          seedInput={seedInput}
-          showLocalSeed={showLocalSeed}
-          onSeedInputChange={setSeedInput}
-          onStartRun={handleStartRun}
-        />
-      ) : null}
+        {!showBootLoader && !bundle ? (
+          <StartPanel
+            busy={busy}
+            connectingSession={connectingSession}
+            network={network}
+            seedInput={seedInput}
+            showLocalSeed={showLocalSeed}
+            onSeedInputChange={setSeedInput}
+            onStartRun={handleStartRun}
+          />
+        ) : null}
 
-      {bundle && network && session ? (
-        <GameConsole
-          bundle={bundle}
-          busy={busy}
-          currentText={currentText}
-          inventoryIds={inventoryIds}
-          network={network}
-          pendingAction={pendingAction}
-          seedInput={seedInput}
-          session={session}
-          onChooseStat={handleChooseStat}
-          onEquip={handleEquip}
-          onReward={handleReward}
-          onRestart={handleStartRun}
-          onSeedInputChange={setSeedInput}
-        />
-      ) : null}
+        {bundle && network && session ? (
+          <GameConsole
+            bundle={bundle}
+            busy={busy}
+            currentText={currentText}
+            inventoryIds={inventoryIds}
+            network={network}
+            pendingAction={pendingAction}
+            seedInput={seedInput}
+            session={session}
+            onChooseStat={handleChooseStat}
+            onEquip={handleEquip}
+            onReward={handleReward}
+            onRestart={handleStartRun}
+            onSeedInputChange={setSeedInput}
+          />
+        ) : null}
 
-      {notice ? (
-        <PlainNotice message={notice} onDismiss={() => setNotice(null)} />
-      ) : null}
-    </main>
+        {notice ? (
+          <PlainNotice message={notice} onDismiss={() => setNotice(null)} />
+        ) : null}
+      </main>
+    </Tooltip.Provider>
   );
 }
 
@@ -477,13 +487,12 @@ function GameConsole({
           onRestart={onRestart}
           onSeedInputChange={onSeedInputChange}
         />
+        {pendingLabel ? (
+          <section aria-label="Pending action" className="pending-panel">
+            <p>{pendingLabel}</p>
+          </section>
+        ) : null}
       </header>
-
-      {pendingLabel ? (
-        <section aria-label="Pending action" className="pending-panel">
-          <p>{pendingLabel}</p>
-        </section>
-      ) : null}
 
       <section aria-label="Main game layout" className="game-layout">
         <aside className="path-column">
@@ -585,36 +594,53 @@ function OptionsPanel({
   onSeedInputChange: (value: string) => void;
 }) {
   return (
-    <details className="options-panel">
-      <summary>Options</summary>
-      <p>Network: {network.chainId}</p>
-      <p>
-        {session.label}: {shortAddress(session.address)}
-      </p>
-
-      {network.profile === "dev" || network.accountMode === "local" ? (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            onRestart();
-          }}
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button className="options-trigger" type="button">
+          Options
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          className="options-popover"
+          collisionPadding={10}
+          side="bottom"
+          sideOffset={8}
         >
-          <label>
-            Seed{" "}
-            <input
-              value={seedInput}
-              onChange={(event) => onSeedInputChange(event.target.value)}
-            />
-          </label>
-          <button disabled={busy} type="submit">
-            New Run
-          </button>
-        </form>
-      ) : null}
+          <section aria-label="Options" className="options-panel">
+            <p>Network: {network.chainId}</p>
+            <p>
+              {session.label}: {shortAddress(session.address)}
+            </p>
 
-      <HistoryPanel logs={logs} />
-      <DebugPanel bundle={bundle} />
-    </details>
+            {network.profile === "dev" || network.accountMode === "local" ? (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  onRestart();
+                }}
+              >
+                <label>
+                  Seed{" "}
+                  <input
+                    value={seedInput}
+                    onChange={(event) => onSeedInputChange(event.target.value)}
+                  />
+                </label>
+                <button disabled={busy} type="submit">
+                  New Run
+                </button>
+              </form>
+            ) : null}
+
+            <HistoryPanel logs={logs} />
+            <DebugPanel bundle={bundle} />
+          </section>
+          <Popover.Arrow className="popover-arrow" />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 
@@ -754,7 +780,6 @@ function ChoiceButton({
         statClass(stat),
         forecast.success ? "choice-likely" : "choice-danger",
       ].join(" ")}
-      title={text.description}
     >
       <div className="choice-topline">
         <img
@@ -767,7 +792,11 @@ function ChoiceButton({
         <h4>{text.label}</h4>
         <b>{statShortLabels[stat]}</b>
       </div>
-      <p>{text.description}</p>
+      <DescriptionTooltip content={text.description}>
+        <p className="choice-description" tabIndex={0}>
+          {text.description}
+        </p>
+      </DescriptionTooltip>
       <dl>
         <div>
           <dt>Check</dt>
@@ -916,8 +945,7 @@ function CharacterPanel({
   return (
     <section aria-label="Character" className="character-panel">
       <StatsPanel bundle={bundle} />
-      <EquippedPanel bundle={bundle} />
-      <InventoryPanel
+      <GearPanel
         bundle={bundle}
         busy={busy}
         inventoryIds={inventoryIds}
@@ -959,40 +987,7 @@ function StatsPanel({ bundle }: { bundle: RunBundle }) {
   );
 }
 
-function EquippedPanel({ bundle }: { bundle: RunBundle }) {
-  return (
-    <section aria-label="Equipped" className="stone-panel equipped-panel">
-      <h2>Equipped</h2>
-      <ul>
-        {equipmentSlots.map((slot) => {
-          const itemId = bundle.character.equipment[slot];
-          const item = itemId > 0 ? getItemView(bundle, itemId) : null;
-          const text = itemId > 0 ? getItemText(itemId) : null;
-
-          return (
-            <li
-              className={
-                item ? `stat-tone ${statClass(getItemPrimaryStat(item))}` : ""
-              }
-              key={slot}
-            >
-              <b>{slotLabels[slot]}</b>
-              <p>{text?.name ?? "Empty"}</p>
-              {item ? (
-                <>
-                  <ItemIcon itemId={itemId} />
-                  <ItemBonusList item={item} />
-                </>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-}
-
-function InventoryPanel({
+function GearPanel({
   bundle,
   busy,
   inventoryIds,
@@ -1005,48 +1000,95 @@ function InventoryPanel({
   pendingAction: PendingAction | null;
   onEquip: (itemId: number) => void;
 }) {
+  const equippedIds = new Set(Object.values(bundle.character.equipment));
+  const carriedIds = inventoryIds.filter((itemId) => !equippedIds.has(itemId));
+
   return (
-    <section aria-label="Inventory" className="stone-panel inventory-panel">
-      <h2>Inventory</h2>
-      {inventoryIds.length === 0 ? <p>No items.</p> : null}
-      <ul>
-        {inventoryIds.map((itemId) => {
+    <section aria-label="Gear" className="stone-panel gear-panel">
+      <h2>Gear</h2>
+      <div className="gear-section">
+        <h3>Equipped</h3>
+        <ul>
+          {equipmentSlots.map((slot) => {
+            const itemId = bundle.character.equipment[slot];
+            const item = itemId > 0 ? getItemView(bundle, itemId) : null;
+            const text = itemId > 0 ? getItemText(itemId) : null;
+
+            return (
+              <GearItemRow
+                item={item}
+                key={slot}
+                slot={slot}
+                text={text}
+              />
+            );
+          })}
+        </ul>
+      </div>
+
+      <div className="gear-section">
+        <h3>Pack</h3>
+        {carriedIds.length === 0 ? <p>No spare items.</p> : null}
+        <ul>
+          {carriedIds.map((itemId) => {
           const item = getItemView(bundle, itemId);
           const text = getItemText(itemId);
-          const equipped = Object.values(bundle.character.equipment).includes(
-            itemId,
-          );
           const pending =
             pendingAction?.kind === "equip" && pendingAction.itemId === itemId;
 
           return (
-            <li
-              className={`stat-tone ${statClass(getItemPrimaryStat(item))}`}
+            <GearItemRow
+              action={
+                <button
+                  disabled={busy || bundle.run.status === "lost"}
+                  onClick={() => onEquip(itemId)}
+                  type="button"
+                >
+                  {pending ? "Equipping..." : "Equip"}
+                </button>
+              }
+              item={item}
               key={itemId}
-              title={text.description}
-            >
-              <ItemIcon itemId={itemId} />
-              <div>
-                <strong>{text.name}</strong>
-                <p>
-                  {slotLabels[item.slot]} tier {item.tier}
-                </p>
-                <p className="item-description">{text.description}</p>
-                <ItemBonusList item={item} />
-              </div>
-              <button
-                disabled={busy || equipped || bundle.run.status === "lost"}
-                onClick={() => onEquip(itemId)}
-                type="button"
-              >
-                {equipped ? "Equipped" : pending ? "Equipping..." : "Equip"}
-              </button>
-            </li>
+              slot={item.slot}
+              text={text}
+            />
           );
         })}
-      </ul>
+        </ul>
+      </div>
     </section>
   );
+}
+
+function GearItemRow({
+  action,
+  item,
+  slot,
+  text,
+}: {
+  action?: ReactNode;
+  item: ItemView | null;
+  slot: EquipmentSlot;
+  text: ReturnType<typeof getItemText> | null;
+}) {
+  const row = (
+    <li
+      className={item ? `stat-tone ${statClass(getItemPrimaryStat(item))}` : ""}
+      tabIndex={text ? 0 : undefined}
+    >
+      {item ? <ItemIcon itemId={item.itemId} /> : <div className="empty-icon" />}
+      <div>
+        <strong>{slotLabels[slot]}</strong>
+        <p>{text?.name ?? "Empty"}</p>
+        {item ? <ItemBonusList item={item} /> : null}
+      </div>
+      {action ? <div className="gear-action">{action}</div> : null}
+    </li>
+  );
+
+  if (!text) return row;
+
+  return <DescriptionTooltip content={text.description}>{row}</DescriptionTooltip>;
 }
 
 function HistoryPanel({ logs }: { logs: ChoiceLogView[] }) {
@@ -1097,6 +1139,30 @@ function DebugPanel({ bundle }: { bundle: RunBundle }) {
       <summary>Chain Debug</summary>
       <pre>{JSON.stringify(snapshot, stringifyBigInt, 2)}</pre>
     </details>
+  );
+}
+
+function DescriptionTooltip({
+  children,
+  content,
+}: {
+  children: ReactNode;
+  content: string;
+}) {
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>{children}</Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content
+          className="game-tooltip"
+          collisionPadding={10}
+          sideOffset={6}
+        >
+          {content}
+          <Tooltip.Arrow className="tooltip-arrow" />
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
   );
 }
 

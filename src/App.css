@@ -55,6 +55,7 @@ button {
   background: #d7aa62;
   box-shadow: inset 0 -3px 0 rgba(68, 36, 20, 0.42);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 button:hover:not(:disabled),
@@ -65,8 +66,10 @@ button:focus-visible:not(:disabled) {
 }
 
 button:disabled {
-  color: #74604b;
-  background: #806443;
+  color: #2b1b13;
+  background: #b99056;
+  border-color: #5b3f27;
+  opacity: 0.72;
   cursor: wait;
 }
 
@@ -176,8 +179,9 @@ img {
 }
 
 .game-shell {
+  position: relative;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 8px;
   width: min(1760px, 100%);
   height: calc(100vh - 20px);
@@ -186,6 +190,7 @@ img {
 }
 
 .top-strip {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(420px, 1fr) auto;
   gap: 8px;
@@ -216,15 +221,13 @@ img {
   gap: 6px;
 }
 
-.run-summary > div,
-.options-panel {
+.run-summary > div {
   padding: 6px 9px;
   border: 2px solid #4b3828;
   background: rgba(18, 13, 10, 0.82);
 }
 
-.run-summary p,
-.options-panel p {
+.run-summary p {
   color: #c3a282;
 }
 
@@ -248,19 +251,49 @@ img {
   background: #bd8f3d;
 }
 
-.options-panel {
-  min-width: 230px;
+.options-trigger {
+  min-width: 150px;
+  height: 100%;
+  color: #f2d390;
+  background:
+    linear-gradient(rgba(18, 13, 10, 0.88), rgba(18, 13, 10, 0.88)),
+    url("/assets/game/ui/bg-dark.png") center / 120px;
+  border-color: #4b3828;
+  text-align: left;
+  padding: 6px 10px;
 }
 
-.options-panel summary {
-  color: #f2d390;
-  cursor: pointer;
+.options-popover {
+  z-index: 20;
+  width: min(460px, calc(100vw - 20px));
+  max-height: min(680px, calc(100vh - 28px));
+  overflow: auto;
+  border: 2px solid #604631;
+  color: #f3dfb5;
+  background:
+    linear-gradient(rgba(22, 15, 11, 0.98), rgba(13, 9, 8, 0.98)),
+    url("/assets/game/ui/section-texture.png") center / 220px;
+  box-shadow:
+    inset 0 0 0 4px rgba(10, 7, 6, 0.86),
+    0 8px 18px rgba(0, 0, 0, 0.32);
+}
+
+.options-panel {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+}
+
+.options-panel p {
+  color: #c3a282;
 }
 
 .options-panel form {
   display: grid;
   gap: 8px;
-  margin-top: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #3d2d22;
+  border-bottom: 1px solid #3d2d22;
 }
 
 .options-panel label {
@@ -279,6 +312,11 @@ img {
   font-size: 14px;
 }
 
+.popover-arrow,
+.tooltip-arrow {
+  fill: #604631;
+}
+
 .pending-panel,
 .notice-panel {
   border: 2px solid #5b402b;
@@ -286,8 +324,22 @@ img {
 }
 
 .pending-panel {
-  padding: 10px 14px;
+  position: absolute;
+  z-index: 12;
+  top: 50%;
+  left: 50%;
+  width: min(280px, calc(100% - 24px));
+  padding: 8px 12px;
   color: #f0c772;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.pending-panel p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .result-success {
@@ -475,6 +527,7 @@ img {
 
 .choice-card {
   display: grid;
+  grid-template-rows: auto minmax(42px, auto) 1fr auto;
   gap: 6px;
   min-height: 0;
   padding: 8px;
@@ -488,6 +541,10 @@ img {
 .choice-card p {
   color: #caa987;
   font-size: 18px;
+}
+
+.choice-description {
+  min-height: 42px;
 }
 
 .choice-topline {
@@ -513,7 +570,8 @@ img {
   display: grid;
   grid-template-columns: 1fr;
   gap: 4px;
-  margin: auto 0 0;
+  align-self: end;
+  margin: 0;
 }
 
 .choice-card dl div {
@@ -543,6 +601,7 @@ img {
 }
 
 .choice-card button {
+  align-self: end;
   width: 100%;
   min-height: 32px;
 }
@@ -574,6 +633,7 @@ img {
 
 .reward-card {
   display: grid;
+  grid-template-rows: 60px auto auto minmax(44px, auto) auto 1fr auto;
   gap: 6px;
   align-content: start;
   padding: 10px;
@@ -593,20 +653,24 @@ img {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
+  align-self: end;
   margin-top: 2px;
+}
+
+.button-row button {
+  min-height: 36px;
 }
 
 .character-panel {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 8px;
   height: 100%;
   min-height: 0;
 }
 
 .stats-panel,
-.equipped-panel,
-.inventory-panel {
+.gear-panel {
   padding: 8px;
 }
 
@@ -643,8 +707,28 @@ img {
   color: #bfa083;
 }
 
-.equipped-panel ul,
-.inventory-panel ul {
+.gear-panel {
+  min-height: 0;
+  overflow: auto;
+}
+
+.gear-section + .gear-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #3a2a20;
+}
+
+.gear-section h3 {
+  color: #f5d19d;
+  font-size: 20px;
+}
+
+.gear-section > p {
+  margin-top: 4px;
+  color: #c7a685;
+}
+
+.gear-section ul {
   display: grid;
   gap: 5px;
   margin: 5px 0 0;
@@ -652,11 +736,10 @@ img {
   list-style: none;
 }
 
-.equipped-panel li,
-.inventory-panel li {
+.gear-section li {
   position: relative;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 7px;
   align-items: start;
   min-height: 42px;
@@ -665,34 +748,24 @@ img {
   background: var(--stat-surface);
 }
 
-.equipped-panel li > b,
-.inventory-panel strong {
+.gear-section strong {
   color: var(--stat-color);
 }
 
-.equipped-panel li p,
-.inventory-panel li p {
+.gear-section li p {
   color: #c7a685;
 }
 
-.equipped-panel .item-icon {
-  grid-row: 1 / span 2;
-}
-
-.inventory-panel li {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-}
-
-.inventory-panel {
-  min-height: 0;
-  overflow: auto;
-}
-
-.inventory-panel button {
-  grid-column: 3;
-  grid-row: 1;
+.gear-action button {
   min-width: 72px;
   min-height: 30px;
+}
+
+.empty-icon {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #4b3828;
+  background: rgba(10, 7, 6, 0.42);
 }
 
 .item-icon {
@@ -709,15 +782,6 @@ img {
 
 .bonus-list span {
   color: var(--stat-color);
-}
-
-.item-description {
-  display: none;
-}
-
-.inventory-panel li:hover .item-description,
-.inventory-panel li:focus-within .item-description {
-  display: block;
 }
 
 .latest-result {
@@ -747,6 +811,16 @@ img {
   max-height: 160px;
   padding: 8px 0 0;
   overflow: auto;
+}
+
+.game-tooltip {
+  z-index: 30;
+  max-width: 260px;
+  padding: 8px 10px;
+  border: 2px solid #604631;
+  color: #f3dfb5;
+  background: rgba(15, 10, 8, 0.96);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
 }
 
 .history-panel ol {
@@ -813,7 +887,7 @@ img {
   }
 
   .run-summary > div,
-  .options-panel {
+  .options-trigger {
     padding: 5px 8px;
   }
 
@@ -826,6 +900,7 @@ img {
   }
 
   .choice-card {
+    grid-template-rows: auto 1fr auto;
     padding: 6px;
   }
 

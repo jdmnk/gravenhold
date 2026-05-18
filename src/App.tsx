@@ -4,7 +4,7 @@ import {
   createGameSession,
   type GameSession,
 } from "@/lib/chain/account/session";
-import { itemIconFor } from "@/lib/assets/gameAssets";
+import { encounterBackgroundFor, itemIconFor } from "@/lib/assets/gameAssets";
 import { getNetwork, type GravenholdNetwork } from "@/lib/chain/networkConfig";
 import {
   chooseOption,
@@ -36,6 +36,8 @@ import {
   itemText,
   storyText,
 } from "@/lib/rpgContent/generatedText";
+
+import "./App.css";
 
 const defaultSeed = "aura-001";
 
@@ -287,7 +289,7 @@ export default function Home() {
   const showBootLoader = !initialLoadComplete && !bundle;
 
   return (
-    <main>
+    <main className="app-root">
       {showBootLoader ? <BootLoaderPanel network={network} /> : null}
 
       {!showBootLoader && !bundle ? (
@@ -329,8 +331,10 @@ export default function Home() {
 
 function BootLoaderPanel({ network }: { network: GravenholdNetwork | null }) {
   return (
-    <section aria-label="Loading active run">
-      <p>{network ? formatNetworkBadge(network) : "Network unavailable"}</p>
+    <section aria-label="Loading active run" className="start-screen">
+      <p className="network-line">
+        {network ? formatNetworkBadge(network) : "Network unavailable"}
+      </p>
       <h1>{storyText.title}</h1>
       <p>Checking active run...</p>
     </section>
@@ -355,8 +359,10 @@ function StartPanel({
   onStartRun: () => void;
 }) {
   return (
-    <section aria-label="Start run">
-      <p>{network ? formatNetworkBadge(network) : "Network unavailable"}</p>
+    <section aria-label="Start run" className="start-screen">
+      <p className="network-line">
+        {network ? formatNetworkBadge(network) : "Network unavailable"}
+      </p>
       <h1>{storyText.title}</h1>
       <p>{storyText.subtitle}</p>
       <p>{storyText.intro}</p>
@@ -404,7 +410,7 @@ function PlainNotice({
   }
 
   return (
-    <section aria-label="Notice">
+    <section aria-label="Notice" className="notice-panel">
       <p>{message}</p>
       <button onClick={handleCopy} type="button">
         {copied ? "Copied" : "Copy"}
@@ -457,9 +463,9 @@ function GameConsole({
   const latestLog = getLatestChoiceLog(bundle);
 
   return (
-    <section aria-label="Gravenhold game">
-      <header>
-        <h1>Gravenhold</h1>
+    <section aria-label="Gravenhold game" className="game-shell">
+      <header className="top-strip">
+        <div className="game-mark">Gravenhold</div>
         <RunSummary bundle={bundle} />
         <OptionsPanel
           bundle={bundle}
@@ -473,19 +479,19 @@ function GameConsole({
       </header>
 
       {pendingLabel ? (
-        <section aria-label="Pending action">
+        <section aria-label="Pending action" className="pending-panel">
           <p>{pendingLabel}</p>
         </section>
       ) : null}
 
       {latestLog ? <ResultSummary log={latestLog} /> : null}
 
-      <section aria-label="Main game layout">
-        <aside>
+      <section aria-label="Main game layout" className="game-layout">
+        <aside className="path-column">
           <ProgressionList bundle={bundle} />
         </aside>
 
-        <section aria-label="Current state">
+        <section aria-label="Current state" className="center-column">
           {showingEncounter ? (
             <EncounterPanel
               bundle={bundle}
@@ -509,7 +515,7 @@ function GameConsole({
           ) : null}
         </section>
 
-        <aside>
+        <aside className="character-column">
           <CharacterPanel
             bundle={bundle}
             busy={busy}
@@ -526,19 +532,30 @@ function GameConsole({
 }
 
 function RunSummary({ bundle }: { bundle: RunBundle }) {
+  const healthPercent = getHealthPercent(bundle);
+  const progressPercent = getRunProgressPercent(bundle);
+
   return (
-    <section aria-label="Run summary">
-      <p>
-        Level {bundle.run.level} / Step {getRunStepLabel(bundle)} / Choices{" "}
-        {bundle.run.choiceCount}
-      </p>
-      <p>
-        Health {bundle.character.health}/{bundle.character.maxHealth}
-      </p>
-      <p>
-        Build: {statLabels[getDominantEffectiveStat(bundle)]} (
-        {getRecentChoiceFocus(bundle)})
-      </p>
+    <section aria-label="Run summary" className="run-summary">
+      <div>
+        <b>Level {bundle.run.level}</b>
+        <p>Step {getRunStepLabel(bundle)} / {bundle.run.choiceCount} choices</p>
+      </div>
+      <div className="bar-block">
+        <b>
+          Health {bundle.character.health}/{bundle.character.maxHealth}
+        </b>
+        <div className="meter" aria-hidden="true">
+          <div style={{ width: `${healthPercent}%` }} />
+        </div>
+      </div>
+      <div className="bar-block">
+        <b>{statLabels[getDominantEffectiveStat(bundle)]} build</b>
+        <p>{getRecentChoiceFocus(bundle)}</p>
+        <div className="meter progress-meter" aria-hidden="true">
+          <div style={{ width: `${progressPercent}%` }} />
+        </div>
+      </div>
     </section>
   );
 }
@@ -561,7 +578,7 @@ function OptionsPanel({
   onSeedInputChange: (value: string) => void;
 }) {
   return (
-    <details>
+    <details className="options-panel">
       <summary>Options</summary>
       <p>Network: {network.chainId}</p>
       <p>
@@ -595,7 +612,7 @@ function OptionsPanel({
 
 function ProgressionList({ bundle }: { bundle: RunBundle }) {
   return (
-    <section aria-label="Progression">
+    <section aria-label="Progression" className="stone-panel progression-panel">
       <h2>Progression</h2>
       <ol>
         {Array.from({ length: 20 }, (_, index) => {
@@ -609,12 +626,22 @@ function ProgressionList({ bundle }: { bundle: RunBundle }) {
             bundle.run.status !== "lost";
 
           return (
-            <li key={level}>
+            <li
+              className={[
+                completed ? "is-cleared" : "",
+                current ? "is-current" : "",
+                bossEncounterId ? "is-boss" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              key={level}
+            >
               <strong>
-                Level {level}: {text.title}
-              </strong>{" "}
-              {bossEncounterId ? "(Boss)" : null} {current ? "(Current)" : null}{" "}
-              {completed ? "(Cleared)" : null}
+                {level}. {text.title}
+              </strong>
+              {bossEncounterId ? <em>Boss</em> : null}
+              {current ? <em>Current</em> : null}
+              {completed ? <em>Cleared</em> : null}
             </li>
           );
         })}
@@ -625,7 +652,10 @@ function ProgressionList({ bundle }: { bundle: RunBundle }) {
 
 function ResultSummary({ log }: { log: ChoiceLogView }) {
   return (
-    <section aria-label="Latest result">
+    <section
+      aria-label="Latest result"
+      className={`result-panel ${log.success ? "result-success" : "result-fail"}`}
+    >
       <h2>Latest Result</h2>
       <p>{getChoiceResultText(log)}</p>
       <ul>
@@ -662,18 +692,27 @@ function EncounterPanel({
   onChooseStat: (stat: StatId) => void;
 }) {
   const current = bundle.currentEncounter!;
+  const background = encounterBackgroundFor(current.encounterId);
 
   return (
-    <section aria-label="Encounter">
-      <h2>{currentText.title}</h2>
-      <p>{currentText.description}</p>
-      <p>
-        {encounterCategoryLabels[current.category]} /{" "}
-        {encounterDifficultyLabels[current.difficultyKind]} / Base difficulty{" "}
-        {current.baseDifficulty}
-      </p>
+    <section aria-label="Encounter" className="encounter-panel">
+      <div
+        className="encounter-art"
+        style={{ backgroundImage: `url(${background})` }}
+      >
+        <div className="encounter-copy">
+          <h2>{currentText.title}</h2>
+          <p>{currentText.description}</p>
+        </div>
+      </div>
 
-      <section aria-label="Choices">
+      <div className="encounter-meta">
+        <b>{encounterCategoryLabels[current.category]}</b>
+        <b>{encounterDifficultyLabels[current.difficultyKind]}</b>
+        <b>Difficulty {current.baseDifficulty}</b>
+      </div>
+
+      <section aria-label="Choices" className="choice-grid">
         <h3>Choices</h3>
         {statIds.map((stat) => (
           <ChoiceButton
@@ -704,25 +743,51 @@ function ChoiceButton({
   onChoose: (stat: StatId) => void;
 }) {
   return (
-    <article>
-      <h4>{text.label}</h4>
+    <article
+      className={[
+        "choice-card",
+        `choice-${stat}`,
+        forecast.success ? "choice-likely" : "choice-danger",
+      ].join(" ")}
+    >
+      <div className="choice-topline">
+        <img
+          alt=""
+          className="stat-icon"
+          height="56"
+          src={statIconFor(stat)}
+          width="56"
+        />
+        <h4>{text.label}</h4>
+        <b>{statShortLabels[stat]}</b>
+      </div>
       <p>{text.description}</p>
-      <p>
-        {statLabels[stat]} {forecast.effectiveStat} / Difficulty{" "}
-        {forecast.difficulty}
-      </p>
-      <p>
-        Result: {forecast.success ? "Success" : "Failure"} / Approach:{" "}
-        {formatApproach(forecast.approach)}
-      </p>
-      <p>
-        {forecast.statGainOnSuccess > 0
-          ? `Success growth: +${forecast.statGainOnSuccess} ${statLabels[stat]}`
-          : "No success growth"}
-        {forecast.success
-          ? ""
-          : ` / Failure damage: ${forecast.healthLossOnFailure}`}
-      </p>
+      <dl>
+        <div>
+          <dt>Check</dt>
+          <dd>
+            {forecast.effectiveStat}/{forecast.difficulty}
+          </dd>
+        </div>
+        <div>
+          <dt>Outcome</dt>
+          <dd>{forecast.success ? "Pass" : "Fail"}</dd>
+        </div>
+        <div>
+          <dt>Approach</dt>
+          <dd>{formatApproach(forecast.approach)}</dd>
+        </div>
+        <div>
+          <dt>Change</dt>
+          <dd>
+            {forecast.success && forecast.statGainOnSuccess > 0
+              ? `+${forecast.statGainOnSuccess} ${statShortLabels[stat]}`
+              : forecast.success
+                ? "Stable"
+                : `-${forecast.healthLossOnFailure} HP`}
+          </dd>
+        </div>
+      </dl>
       <button disabled={busy} onClick={() => onChoose(stat)} type="button">
         Choose {statLabels[stat]}
       </button>
@@ -742,40 +807,44 @@ function RewardPanel({
   onReward: (reward: RewardOfferView, equipNow: boolean) => void;
 }) {
   return (
-    <section aria-label="Rewards">
+    <section aria-label="Rewards" className="reward-panel">
       <h2>{storyText.levelClearedTitle}</h2>
       <p>{storyText.levelClearedDescription}</p>
-      {bundle.rewards.map((reward) => {
-        const item = getItemView(bundle, reward.itemId);
-        const text = getItemText(reward.itemId);
-        const equippedItem = getEquippedItemForSlot(bundle, item.slot);
-        const pending =
-          pendingAction?.kind === "reward" &&
-          pendingAction.rewardIndex === reward.index;
+      <div className="reward-grid">
+        {bundle.rewards.map((reward) => {
+          const item = getItemView(bundle, reward.itemId);
+          const text = getItemText(reward.itemId);
+          const equippedItem = getEquippedItemForSlot(bundle, item.slot);
+          const pending =
+            pendingAction?.kind === "reward" &&
+            pendingAction.rewardIndex === reward.index;
 
-        return (
-          <article key={reward.index}>
-            <h3>{text.name}</h3>
-            <ItemIcon itemId={reward.itemId} />
-            <p>
-              {slotLabels[item.slot]} / Tier {item.tier}
-            </p>
-            <p>{text.description}</p>
-            <ItemBonusList item={item} />
-            <RewardComparison
-              equippedItem={equippedItem}
-              offeredItem={item}
-              dominantStat={getDominantEffectiveStat(bundle)}
-            />
-            <button disabled={busy} onClick={() => onReward(reward, false)} type="button">
-              {pending ? "Taking..." : "Take"}
-            </button>
-            <button disabled={busy} onClick={() => onReward(reward, true)} type="button">
-              {pending ? "Equipping..." : "Take and equip"}
-            </button>
-          </article>
-        );
-      })}
+          return (
+            <article className="reward-card" key={reward.index}>
+              <ItemIcon itemId={reward.itemId} />
+              <h3>{text.name}</h3>
+              <p>
+                {slotLabels[item.slot]} / Tier {item.tier}
+              </p>
+              <p>{text.description}</p>
+              <ItemBonusList item={item} />
+              <RewardComparison
+                equippedItem={equippedItem}
+                offeredItem={item}
+                dominantStat={getDominantEffectiveStat(bundle)}
+              />
+              <div className="button-row">
+                <button disabled={busy} onClick={() => onReward(reward, false)} type="button">
+                  {pending ? "Taking..." : "Take"}
+                </button>
+                <button disabled={busy} onClick={() => onReward(reward, true)} type="button">
+                  {pending ? "Equipping..." : "Take and equip"}
+                </button>
+              </div>
+            </article>
+          );
+        })}
+      </div>
     </section>
   );
 }
@@ -792,7 +861,7 @@ function CompletePanel({
   const won = bundle.run.status === "won";
 
   return (
-    <section aria-label="Complete">
+    <section aria-label="Complete" className="complete-panel">
       <h2>{won ? storyText.victoryTitle : storyText.defeatTitle}</h2>
       <p>{won ? storyText.victoryDescription : storyText.defeatDescription}</p>
       <button disabled={busy} onClick={onRestart} type="button">
@@ -816,7 +885,7 @@ function CharacterPanel({
   onEquip: (itemId: number) => void;
 }) {
   return (
-    <section aria-label="Character">
+    <section aria-label="Character" className="character-panel">
       <StatsPanel bundle={bundle} />
       <EquippedPanel bundle={bundle} />
       <InventoryPanel
@@ -832,7 +901,7 @@ function CharacterPanel({
 
 function StatsPanel({ bundle }: { bundle: RunBundle }) {
   return (
-    <section aria-label="Stats">
+    <section aria-label="Stats" className="stone-panel stats-panel">
       <h2>Status</h2>
       <table>
         <tbody>
@@ -844,7 +913,9 @@ function StatsPanel({ bundle }: { bundle: RunBundle }) {
             return (
               <tr key={stat}>
                 <th scope="row">{statLabels[stat]}</th>
-                <td>{base + equipment}</td>
+                <td>
+                  <b>{base + equipment}</b>
+                </td>
                 <td>
                   base {base}
                   {equipment > 0 ? `, equipment +${equipment}` : ""}
@@ -861,7 +932,7 @@ function StatsPanel({ bundle }: { bundle: RunBundle }) {
 
 function EquippedPanel({ bundle }: { bundle: RunBundle }) {
   return (
-    <section aria-label="Equipped">
+    <section aria-label="Equipped" className="stone-panel equipped-panel">
       <h2>Equipped</h2>
       <ul>
         {equipmentSlots.map((slot) => {
@@ -871,10 +942,10 @@ function EquippedPanel({ bundle }: { bundle: RunBundle }) {
 
           return (
             <li key={slot}>
-              {slotLabels[slot]}: {text?.name ?? "Empty"}
+              <b>{slotLabels[slot]}</b>
+              <p>{text?.name ?? "Empty"}</p>
               {item ? (
                 <>
-                  {" "}
                   <ItemIcon itemId={itemId} />
                   <ItemBonusList item={item} />
                 </>
@@ -901,7 +972,7 @@ function InventoryPanel({
   onEquip: (itemId: number) => void;
 }) {
   return (
-    <section aria-label="Inventory">
+    <section aria-label="Inventory" className="stone-panel inventory-panel">
       <h2>Inventory</h2>
       {inventoryIds.length === 0 ? <p>No items.</p> : null}
       <ul>
@@ -917,8 +988,13 @@ function InventoryPanel({
           return (
             <li key={itemId}>
               <ItemIcon itemId={itemId} />
-              <strong>{text.name}</strong> {slotLabels[item.slot]} tier{" "}
-              {item.tier}. {text.description} <ItemBonusList item={item} />
+              <div>
+                <strong>{text.name}</strong>
+                <p>
+                  {slotLabels[item.slot]} tier {item.tier}. {text.description}
+                </p>
+                <ItemBonusList item={item} />
+              </div>
               <button
                 disabled={busy || equipped || bundle.run.status === "lost"}
                 onClick={() => onEquip(itemId)}
@@ -936,7 +1012,7 @@ function InventoryPanel({
 
 function HistoryPanel({ logs }: { logs: ChoiceLogView[] }) {
   return (
-    <section aria-label="Log">
+    <section aria-label="Log" className="history-panel">
       <h2>Log</h2>
       {logs.length === 0 ? <p>No actions yet.</p> : null}
       <ol>
@@ -990,7 +1066,20 @@ function ItemIcon({ itemId }: { itemId: number }) {
 
   if (!icon) return null;
 
-  return <img alt="" height="32" src={icon} width="32" />;
+  return <img alt="" className="item-icon" height="32" src={icon} width="32" />;
+}
+
+function statIconFor(stat: StatId): string {
+  switch (stat) {
+    case "strength":
+      return "/assets/game/ui/str-icon.png";
+    case "intellect":
+      return "/assets/game/ui/generated/intelect3.png";
+    case "agility":
+      return "/assets/game/ui/agi-icon.png";
+    case "spirit":
+      return "/assets/game/ui/spirit-icon.png";
+  }
 }
 
 function ItemBonusList({ item }: { item: ItemView }) {
@@ -1004,12 +1093,12 @@ function ItemBonusList({ item }: { item: ItemView }) {
   if (bonuses.length === 0) return null;
 
   return (
-    <span>
+    <b className="bonus-list">
       {" "}
       {bonuses
         .map((bonus) => `+${bonus.value} ${statShortLabels[bonus.stat]}`)
         .join(", ")}
-    </span>
+    </b>
   );
 }
 
@@ -1213,6 +1302,25 @@ function getRecentChoiceFocus(bundle: RunBundle): string {
   const total = bundle.recentChoices.length;
   if (total === 0) return "unformed";
   return counts[dominantStat] / total >= 0.6 ? "focused" : "drifting";
+}
+
+function getHealthPercent(bundle: RunBundle): number {
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round((bundle.character.health / bundle.character.maxHealth) * 100),
+    ),
+  );
+}
+
+function getRunProgressPercent(bundle: RunBundle): number {
+  const completedSteps =
+    (bundle.run.level - 1) * 3 +
+    (bundle.run.phase === "reward" || bundle.run.phase === "complete"
+      ? 3
+      : bundle.run.encounterIndex);
+  return Math.max(0, Math.min(100, Math.round((completedSteps / 60) * 100)));
 }
 
 function shortAddress(address: string): string {

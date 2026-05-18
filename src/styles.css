@@ -1029,7 +1029,7 @@ button:disabled {
 }
 
 .topbar,
-.equipment-section,
+.progression-section,
 .viewport,
 .log-section,
 .status-section,
@@ -1065,51 +1065,17 @@ button:disabled {
   text-shadow: 0 2px 0 #000;
 }
 
-.run-progress-strip {
-  align-items: center;
-  display: grid;
-  gap: 0.16rem;
-  grid-template-columns: repeat(20, minmax(0, 1fr));
-  min-height: 1.28rem;
-  padding-inline: 0.28rem;
-}
-
-.run-progress-node {
-  align-items: center;
-  background: linear-gradient(180deg, rgba(29, 22, 15, 0.82), rgba(6, 5, 4, 0.9));
-  border: 1px solid rgba(242, 212, 138, 0.16);
-  color: rgba(246, 234, 212, 0.48);
-  display: flex;
-  font-size: 0.58rem;
-  font-weight: 900;
-  justify-content: center;
-  line-height: 1;
-  min-height: 0.82rem;
-  text-shadow: 0 1px 0 #000;
-}
-
-.run-progress-node-complete {
-  background: linear-gradient(180deg, rgba(83, 63, 29, 0.82), rgba(32, 23, 11, 0.94));
-  border-color: rgba(242, 212, 138, 0.32);
-  color: rgba(246, 234, 212, 0.72);
-}
-
-.run-progress-node-active {
-  border-color: rgba(242, 212, 138, 0.78);
-  box-shadow: 0 0 12px rgba(242, 212, 138, 0.18);
-  color: #fff3d2;
-}
-
-.run-progress-node-boss {
-  border-color: rgba(238, 59, 59, 0.42);
-  color: #ffc0c0;
-}
-
-.main-grid {
+.play-layout {
   display: grid;
   gap: 0.35rem;
   grid-template-columns: var(--game-left-column-width) minmax(0, 1fr);
   min-height: 0;
+}
+
+.play-column {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
 }
 
 .center-column {
@@ -1149,7 +1115,7 @@ button:disabled {
   z-index: 4;
 }
 
-.equipment-section,
+.progression-section,
 .status-section,
 .log-section,
 .inventory-section {
@@ -1159,10 +1125,13 @@ button:disabled {
 }
 
 .inventory-section {
+  align-content: start;
+  display: grid;
+  grid-template-rows: auto auto auto;
   overflow: visible;
 }
 
-.equipment-section > h2,
+.progression-section > h2,
 .status-section > h2,
 .log-section > h2,
 .inventory-section > h2 {
@@ -1174,6 +1143,213 @@ button:disabled {
   text-align: center;
   text-shadow: 0 2px 0 #000;
   text-transform: uppercase;
+}
+
+.progression-section {
+  align-self: start;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: clamp(28rem, calc(100vh - 4.9rem), 44rem);
+}
+
+.run-progression-tree {
+  min-height: 0;
+  overflow: auto;
+  padding: 0.08rem 0.12rem 0.18rem;
+  scrollbar-width: thin;
+}
+
+.run-progression-tree ol {
+  counter-reset: path;
+  display: grid;
+  gap: 0.2rem;
+  list-style: none;
+  margin: 0;
+  min-height: 100%;
+  padding: 0.1rem 0 0.18rem;
+  position: relative;
+}
+
+.run-progression-tree ol::before {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(242, 212, 138, 0.1),
+      rgba(242, 212, 138, 0.42) 18%,
+      rgba(98, 215, 223, 0.24) 52%,
+      rgba(238, 59, 59, 0.36) 86%,
+      rgba(238, 59, 59, 0.12)
+    );
+  content: "";
+  inset: 0 auto 0 1.58rem;
+  position: absolute;
+  width: 2px;
+}
+
+.progression-step {
+  --step-offset: 0rem;
+  align-items: center;
+  display: grid;
+  gap: 0.34rem;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  min-height: 2.15rem;
+  padding-left: var(--step-offset);
+  position: relative;
+}
+
+.progression-step-1 {
+  --step-offset: 0.42rem;
+}
+
+.progression-step-2 {
+  --step-offset: 0.2rem;
+}
+
+.progression-step-3 {
+  --step-offset: 0.62rem;
+}
+
+.progression-node {
+  align-items: center;
+  aspect-ratio: 1;
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255, 244, 203, 0.38), transparent 30%),
+    linear-gradient(180deg, rgba(45, 33, 20, 0.98), rgba(8, 7, 5, 0.98));
+  border: 1px solid rgba(242, 212, 138, 0.28);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, 0.72),
+    0 0 0 2px rgba(0, 0, 0, 0.46);
+  color: rgba(246, 234, 212, 0.58);
+  display: flex;
+  font-size: 0.66rem;
+  font-weight: 950;
+  justify-content: center;
+  line-height: 1;
+  position: relative;
+  text-shadow: 0 1px 0 #000;
+  z-index: 1;
+}
+
+.progression-copy {
+  background:
+    linear-gradient(90deg, rgba(242, 212, 138, 0.08), transparent 24%),
+    rgba(11, 9, 7, 0.58);
+  border-left: 2px solid rgba(242, 212, 138, 0.14);
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+  padding: 0.24rem 0.34rem 0.24rem 0.42rem;
+}
+
+.progression-kicker,
+.progression-detail,
+.progression-reward {
+  color: rgba(246, 234, 212, 0.48);
+  font-size: 0.54rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.progression-copy strong {
+  color: rgba(246, 234, 212, 0.7);
+  display: block;
+  font-size: 0.72rem;
+  line-height: 1.04;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 0 #000;
+  white-space: nowrap;
+}
+
+.progression-reward {
+  align-items: center;
+  background: rgba(7, 6, 5, 0.76);
+  border: 1px solid rgba(214, 182, 107, 0.18);
+  color: rgba(214, 182, 107, 0.46);
+  display: inline-flex;
+  grid-column: 2;
+  justify-self: start;
+  min-height: 1rem;
+  padding: 0 0.36rem;
+  position: relative;
+}
+
+.progression-reward::before {
+  background: rgba(214, 182, 107, 0.38);
+  content: "";
+  height: 0.38rem;
+  left: -0.8rem;
+  position: absolute;
+  rotate: 45deg;
+  width: 0.38rem;
+}
+
+.progression-step-complete .progression-node {
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255, 244, 203, 0.55), transparent 34%),
+    linear-gradient(180deg, rgba(104, 76, 35, 0.98), rgba(30, 22, 13, 0.98));
+  border-color: rgba(242, 212, 138, 0.58);
+  color: #fff3d2;
+}
+
+.progression-step-complete .progression-copy strong,
+.progression-step-active .progression-copy strong,
+.progression-step-reward-active .progression-copy strong {
+  color: #fff3d2;
+}
+
+.progression-step-active .progression-node {
+  animation: progression-current-pulse 1500ms ease-in-out infinite;
+  border-color: rgba(98, 215, 223, 0.84);
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, 0.72),
+    0 0 0 2px rgba(98, 215, 223, 0.18),
+    0 0 18px rgba(98, 215, 223, 0.22);
+  color: #e8fbff;
+}
+
+.progression-step-active .progression-copy {
+  background:
+    linear-gradient(90deg, rgba(98, 215, 223, 0.16), transparent 38%),
+    rgba(11, 9, 7, 0.72);
+  border-left-color: rgba(98, 215, 223, 0.58);
+}
+
+.progression-step-boss .progression-node {
+  border-color: rgba(238, 59, 59, 0.68);
+}
+
+.progression-step-boss .progression-copy {
+  background:
+    linear-gradient(90deg, rgba(238, 59, 59, 0.16), transparent 36%),
+    rgba(13, 7, 6, 0.78);
+  border-left-color: rgba(238, 59, 59, 0.5);
+}
+
+.progression-step-boss .progression-kicker {
+  color: rgba(255, 192, 192, 0.82);
+}
+
+.progression-step-locked .progression-copy {
+  opacity: 0.54;
+}
+
+.progression-step-locked .progression-node {
+  color: rgba(246, 234, 212, 0.34);
+}
+
+.progression-reward-opened {
+  border-color: rgba(214, 182, 107, 0.4);
+  color: rgba(246, 234, 212, 0.62);
+}
+
+.progression-reward-active {
+  animation: progression-reward-glow 1200ms ease-in-out infinite;
+  background: rgba(42, 30, 12, 0.92);
+  border-color: rgba(242, 212, 138, 0.82);
+  color: #fff3d2;
 }
 
 .scene-panel,
@@ -2293,7 +2469,67 @@ button:disabled {
 }
 
 .inventory-panel {
-  height: 100%;
+  height: auto;
+}
+
+.inventory-equipment {
+  align-items: center;
+  border-top: 1px solid rgba(242, 212, 138, 0.18);
+  display: grid;
+  gap: 0.46rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  margin-top: 0.62rem;
+  padding-top: 0.46rem;
+}
+
+.inventory-equipment h3 {
+  color: rgba(240, 201, 111, 0.88);
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  line-height: 1;
+  text-shadow: 0 2px 0 #000;
+  text-transform: uppercase;
+}
+
+.inventory-equipment .equipment-panel {
+  height: auto;
+  min-width: 0;
+}
+
+.inventory-equipment .equipment-loadout {
+  display: grid;
+  gap: 0.22rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 0;
+}
+
+.inventory-equipment .equipment-slot-card {
+  gap: 0.26rem;
+  grid-template-columns: 1.62rem minmax(0, 1fr);
+  min-height: 1.92rem;
+  padding: 0.18rem 0.24rem;
+}
+
+.inventory-equipment .equipment-slot-copy strong {
+  font-size: 0.64rem;
+  line-height: 1.05;
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+.inventory-equipment .equipment-slot-meta {
+  font-size: 0.48rem;
+  margin-top: 0.1rem;
+}
+
+.inventory-equipment .item-bonus-list,
+.inventory-equipment .equipment-slot-meta {
+  display: none;
+}
+
+.inventory-equipment .item-icon-lg {
+  height: 1.4rem;
+  width: 1.4rem;
 }
 
 .inventory-empty,
@@ -2625,6 +2861,28 @@ button:disabled {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes progression-current-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  50% {
+    filter: brightness(1.16);
+    transform: scale(1.06);
+  }
+}
+
+@keyframes progression-reward-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(242, 212, 138, 0);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(242, 212, 138, 0.24);
   }
 }
 

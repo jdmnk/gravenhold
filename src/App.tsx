@@ -523,117 +523,121 @@ function GameConsole({
           onSeedInputChange={onSeedInputChange}
         />
       </header>
-      <RunProgressStrip bundle={bundle} />
-
-      <div className="main-grid">
-        <aside className="equipment-section">
-          <h2>Equipped</h2>
-          <EquipmentPanel bundle={bundle} visualEvents={visualEvents} />
+      <div className="play-layout">
+        <aside className="progression-section">
+          <h2>Descent</h2>
+          <RunProgressionTree bundle={bundle} />
         </aside>
 
-        <div className="center-column">
-          <div
-            className={`viewport ${visualEvents.healthLost ? "viewport-damaged" : ""}`}
-          >
-            {visualEvents.healthLost ? (
-              <span
-                aria-hidden="true"
-                className="viewport-hit-flash"
-                key={`hit-${visualEvents.result?.key ?? visualEvents.sceneKey}`}
-              />
-            ) : null}
-            {showingEncounter ? (
-              <EncounterPanel
-                bundle={bundle}
-                encounterTextRecord={currentText!}
-                event={sceneEvent}
-                key={visualEvents.sceneKey}
-                previewStat={previewStat}
-              />
-            ) : null}
+        <section className="play-column" aria-label="Current run">
+          <div className="center-column">
+            <div
+              className={`viewport ${visualEvents.healthLost ? "viewport-damaged" : ""}`}
+            >
+              {visualEvents.healthLost ? (
+                <span
+                  aria-hidden="true"
+                  className="viewport-hit-flash"
+                  key={`hit-${visualEvents.result?.key ?? visualEvents.sceneKey}`}
+                />
+              ) : null}
+              {showingEncounter ? (
+                <EncounterPanel
+                  bundle={bundle}
+                  encounterTextRecord={currentText!}
+                  event={sceneEvent}
+                  key={visualEvents.sceneKey}
+                  previewStat={previewStat}
+                />
+              ) : null}
 
-            {showingReward ? (
-              <RewardPanel event={sceneEvent} key={visualEvents.sceneKey} />
-            ) : null}
+              {showingReward ? (
+                <RewardPanel event={sceneEvent} key={visualEvents.sceneKey} />
+              ) : null}
 
-            {showingComplete ? (
-              <CompletePanel
+              {showingComplete ? (
+                <CompletePanel
+                  bundle={bundle}
+                  busy={busy}
+                  event={sceneEvent}
+                  key={visualEvents.sceneKey}
+                  onRestart={onRestart}
+                />
+              ) : null}
+            </div>
+
+            <div className={`command-row ${busy ? "command-row-busy" : ""}`}>
+              {showingEncounter
+                ? statIds.map((stat) => (
+                    <ChoiceSlotCard
+                      busy={busy}
+                      bundle={bundle}
+                      encounterTextRecord={currentText!}
+                      key={stat}
+                      pendingAction={pendingAction}
+                      stat={stat}
+                      onChoose={onChooseStat}
+                      onPreviewStat={setHoveredStat}
+                    />
+                  ))
+                : null}
+
+              {showingReward
+                ? bundle.rewards.map((reward) => (
+                    <RewardSlotCard
+                      busy={busy}
+                      bundle={bundle}
+                      key={`reward-${reward.index}`}
+                      pendingAction={pendingAction}
+                      reward={reward}
+                      onTake={onReward}
+                    />
+                  ))
+                : null}
+
+              {showingComplete ? (
+                <button
+                  className="restart-card"
+                  disabled={busy}
+                  onClick={onRestart}
+                  type="button"
+                >
+                  Start another run
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="bottom-row">
+            <section className="status-section">
+              <h2>Status</h2>
+              <StatsPanel bundle={bundle} visualEvents={visualEvents} />
+            </section>
+
+            <footer className="inventory-section">
+              <h2>Inventory</h2>
+              <InventoryPanel
                 bundle={bundle}
                 busy={busy}
-                event={sceneEvent}
-                key={visualEvents.sceneKey}
-                onRestart={onRestart}
+                inventoryIds={inventoryIds}
+                pendingAction={pendingAction}
+                visualEvents={visualEvents}
+                onEquip={onEquip}
               />
-            ) : null}
+              <div className="inventory-equipment">
+                <h3>Equipped</h3>
+                <EquipmentPanel bundle={bundle} visualEvents={visualEvents} />
+              </div>
+            </footer>
+
+            <section className="log-section">
+              <h2>Log</h2>
+              <HistoryPanel
+                latestLogIndex={visualEvents.latestLogIndex}
+                logs={bundle.recentChoices}
+              />
+            </section>
           </div>
-
-          <div className={`command-row ${busy ? "command-row-busy" : ""}`}>
-            {showingEncounter
-              ? statIds.map((stat) => (
-                  <ChoiceSlotCard
-                    busy={busy}
-                    bundle={bundle}
-                    encounterTextRecord={currentText!}
-                    key={stat}
-                    pendingAction={pendingAction}
-                    stat={stat}
-                    onChoose={onChooseStat}
-                    onPreviewStat={setHoveredStat}
-                  />
-                ))
-              : null}
-
-            {showingReward
-              ? bundle.rewards.map((reward) => (
-                  <RewardSlotCard
-                    busy={busy}
-                    bundle={bundle}
-                    key={`reward-${reward.index}`}
-                    pendingAction={pendingAction}
-                    reward={reward}
-                    onTake={onReward}
-                  />
-                ))
-              : null}
-
-            {showingComplete ? (
-              <button
-                className="restart-card"
-                disabled={busy}
-                onClick={onRestart}
-                type="button"
-              >
-                Start another run
-              </button>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <div className="bottom-row">
-        <section className="status-section">
-          <h2>Status</h2>
-          <StatsPanel bundle={bundle} visualEvents={visualEvents} />
-        </section>
-
-        <footer className="inventory-section">
-          <h2>Inventory</h2>
-          <InventoryPanel
-            bundle={bundle}
-            busy={busy}
-            inventoryIds={inventoryIds}
-            pendingAction={pendingAction}
-            visualEvents={visualEvents}
-            onEquip={onEquip}
-          />
-        </footer>
-
-        <section className="log-section">
-          <h2>Log</h2>
-          <HistoryPanel
-            latestLogIndex={visualEvents.latestLogIndex}
-            logs={bundle.recentChoices}
-          />
         </section>
       </div>
     </section>
@@ -950,39 +954,87 @@ function SceneHud({
   );
 }
 
-function RunProgressStrip({ bundle }: { bundle: RunBundle }) {
-  const maxLevel = 20;
-  const bossLevels = new Set([5, 10, 15, 20]);
+const maxRunLevel = 20;
+const bossEncounterIdsByLevel: Partial<Record<number, number>> = {
+  5: 201,
+  10: 202,
+  15: 203,
+  20: 204,
+};
+
+function RunProgressionTree({ bundle }: { bundle: RunBundle }) {
+  const activeLevel = bundle.run.status === "won" ? maxRunLevel : bundle.run.level;
+  const activeRewardLevel =
+    bundle.run.phase === "reward" && bundle.run.status === "reward"
+      ? bundle.run.level
+      : null;
 
   return (
-    <nav className="run-progress-strip" aria-label="Run progress">
-      {Array.from({ length: maxLevel }, (_, index) => {
-        const level = index + 1;
-        const completed =
-          bundle.run.status === "won" || level < bundle.run.level;
-        const active =
-          level === bundle.run.level &&
-          bundle.run.status !== "won" &&
-          bundle.run.status !== "lost";
-        const boss = bossLevels.has(level);
+    <nav className="run-progression-tree" aria-label="Run progression">
+      <ol>
+        {Array.from({ length: maxRunLevel }, (_, index) => {
+          const level = index + 1;
+          const bossEncounterId = bossEncounterIdsByLevel[level];
+          const bossText = bossEncounterId ? getEncounterText(bossEncounterId) : null;
+          const challengeText = getEncounterText(level);
+          const completed =
+            bundle.run.status === "won" ||
+            level < bundle.run.level ||
+            activeRewardLevel === level;
+          const active =
+            level === activeLevel &&
+            bundle.run.status !== "won" &&
+            bundle.run.status !== "lost" &&
+            activeRewardLevel !== level;
+          const rewardActive = activeRewardLevel === level;
+          const locked = level > activeLevel && bundle.run.status !== "won";
+          const boss = Boolean(bossEncounterId);
 
-        return (
-          <span
-            aria-label={`Level ${level}${boss ? " boss" : ""}${active ? " current" : completed ? " cleared" : ""}`}
-            className={[
-              "run-progress-node",
-              completed ? "run-progress-node-complete" : "",
-              active ? "run-progress-node-active" : "",
-              boss ? "run-progress-node-boss" : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            key={level}
-          >
-            {level}
-          </span>
-        );
-      })}
+          return (
+            <li
+              className={[
+                "progression-step",
+                `progression-step-${index % 4}`,
+                completed ? "progression-step-complete" : "",
+                active ? "progression-step-active" : "",
+                locked ? "progression-step-locked" : "",
+                boss ? "progression-step-boss" : "",
+                rewardActive ? "progression-step-reward-active" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              key={level}
+            >
+              <span className="progression-node" aria-hidden="true">
+                {level}
+              </span>
+              <span className="progression-copy">
+                <span className="progression-kicker">
+                  Level {level}
+                  {boss ? " / boss gate" : ""}
+                </span>
+                <strong>{bossText?.title ?? challengeText.title}</strong>
+                <span className="progression-detail">
+                  {boss ? challengeText.title : "3 encounters"}
+                </span>
+              </span>
+              {level < maxRunLevel ? (
+                <span
+                  className={[
+                    "progression-reward",
+                    completed ? "progression-reward-opened" : "",
+                    rewardActive ? "progression-reward-active" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  Reward
+                </span>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
     </nav>
   );
 }

@@ -470,6 +470,7 @@ function GameConsole({
         <OptionsPanel
           bundle={bundle}
           busy={busy}
+          logs={bundle.recentChoices}
           network={network}
           seedInput={seedInput}
           session={session}
@@ -484,8 +485,6 @@ function GameConsole({
         </section>
       ) : null}
 
-      {latestLog ? <ResultSummary log={latestLog} /> : null}
-
       <section aria-label="Main game layout" className="game-layout">
         <aside className="path-column">
           <ProgressionList bundle={bundle} />
@@ -497,6 +496,7 @@ function GameConsole({
               bundle={bundle}
               busy={busy}
               currentText={currentText!}
+              latestLog={latestLog}
               onChooseStat={onChooseStat}
             />
           ) : null}
@@ -505,13 +505,19 @@ function GameConsole({
             <RewardPanel
               bundle={bundle}
               busy={busy}
+              latestLog={latestLog}
               pendingAction={pendingAction}
               onReward={onReward}
             />
           ) : null}
 
           {showingComplete ? (
-            <CompletePanel bundle={bundle} busy={busy} onRestart={onRestart} />
+            <CompletePanel
+              bundle={bundle}
+              busy={busy}
+              latestLog={latestLog}
+              onRestart={onRestart}
+            />
           ) : null}
         </section>
 
@@ -526,7 +532,6 @@ function GameConsole({
         </aside>
       </section>
 
-      <HistoryPanel logs={bundle.recentChoices} />
     </section>
   );
 }
@@ -563,6 +568,7 @@ function RunSummary({ bundle }: { bundle: RunBundle }) {
 function OptionsPanel({
   bundle,
   busy,
+  logs,
   network,
   seedInput,
   session,
@@ -571,6 +577,7 @@ function OptionsPanel({
 }: {
   bundle: RunBundle;
   busy: boolean;
+  logs: ChoiceLogView[];
   network: GravenholdNetwork;
   seedInput: string;
   session: GameSession;
@@ -605,6 +612,7 @@ function OptionsPanel({
         </form>
       ) : null}
 
+      <HistoryPanel logs={logs} />
       <DebugPanel bundle={bundle} />
     </details>
   );
@@ -650,33 +658,26 @@ function ProgressionList({ bundle }: { bundle: RunBundle }) {
   );
 }
 
-function ResultSummary({ log }: { log: ChoiceLogView }) {
+function LatestResultBadge({ log }: { log: ChoiceLogView }) {
   return (
-    <section
+    <aside
       aria-label="Latest result"
-      className={`result-panel ${log.success ? "result-success" : "result-fail"}`}
+      className={[
+        "latest-result",
+        "stat-tone",
+        statClass(log.stat),
+        log.success ? "result-success" : "result-fail",
+      ].join(" ")}
     >
-      <h2>Latest Result</h2>
-      <p>{getChoiceResultText(log)}</p>
-      <ul>
-        <li>
-          {statLabels[log.stat]} {log.effectiveStat} / Difficulty{" "}
-          {log.difficulty}
-        </li>
-        {log.statGain > 0 ? (
-          <li>
-            +{log.statGain} {statLabels[log.stat]}
-          </li>
-        ) : null}
-        {log.healthDeltaAmount > 0 ? (
-          <li>
-            {formatDelta(log.healthDeltaSign, log.healthDeltaAmount)} Health
-          </li>
-        ) : null}
-        {log.completedLevel ? <li>Level clear</li> : null}
-        {log.bossDefeated ? <li>Boss defeated</li> : null}
-      </ul>
-    </section>
+      <b>{log.success ? "Passed" : "Failed"}</b>
+      <p>
+        {statShortLabels[log.stat]} {log.effectiveStat}/{log.difficulty}
+        {log.statGain > 0 ? ` / +${log.statGain}` : ""}
+        {log.healthDeltaAmount > 0
+          ? ` / ${formatDelta(log.healthDeltaSign, log.healthDeltaAmount)} HP`
+          : ""}
+      </p>
+    </aside>
   );
 }
 
@@ -684,11 +685,13 @@ function EncounterPanel({
   bundle,
   busy,
   currentText,
+  latestLog,
   onChooseStat,
 }: {
   bundle: RunBundle;
   busy: boolean;
   currentText: ReturnType<typeof getEncounterText>;
+  latestLog: ChoiceLogView | null;
   onChooseStat: (stat: StatId) => void;
 }) {
   const current = bundle.currentEncounter!;
@@ -700,6 +703,7 @@ function EncounterPanel({
         className="encounter-art"
         style={{ backgroundImage: `url(${background})` }}
       >
+        {latestLog ? <LatestResultBadge log={latestLog} /> : null}
         <div className="encounter-copy">
           <h2>{currentText.title}</h2>
           <p>{currentText.description}</p>
@@ -746,9 +750,11 @@ function ChoiceButton({
     <article
       className={[
         "choice-card",
-        `choice-${stat}`,
+        "stat-tone",
+        statClass(stat),
         forecast.success ? "choice-likely" : "choice-danger",
       ].join(" ")}
+      title={text.description}
     >
       <div className="choice-topline">
         <img
@@ -798,18 +804,25 @@ function ChoiceButton({
 function RewardPanel({
   bundle,
   busy,
+  latestLog,
   pendingAction,
   onReward,
 }: {
   bundle: RunBundle;
   busy: boolean;
+  latestLog: ChoiceLogView | null;
   pendingAction: PendingAction | null;
   onReward: (reward: RewardOfferView, equipNow: boolean) => void;
 }) {
   return (
     <section aria-label="Rewards" className="reward-panel">
-      <h2>{storyText.levelClearedTitle}</h2>
-      <p>{storyText.levelClearedDescription}</p>
+      <div className="panel-heading">
+        <div>
+          <h2>{storyText.levelClearedTitle}</h2>
+          <p>{storyText.levelClearedDescription}</p>
+        </div>
+        {latestLog ? <LatestResultBadge log={latestLog} /> : null}
+      </div>
       <div className="reward-grid">
         {bundle.rewards.map((reward) => {
           const item = getItemView(bundle, reward.itemId);
@@ -820,7 +833,14 @@ function RewardPanel({
             pendingAction.rewardIndex === reward.index;
 
           return (
-            <article className="reward-card" key={reward.index}>
+            <article
+              className={[
+                "reward-card",
+                "stat-tone",
+                statClass(getItemPrimaryStat(item)),
+              ].join(" ")}
+              key={reward.index}
+            >
               <ItemIcon itemId={reward.itemId} />
               <h3>{text.name}</h3>
               <p>
@@ -852,18 +872,27 @@ function RewardPanel({
 function CompletePanel({
   bundle,
   busy,
+  latestLog,
   onRestart,
 }: {
   bundle: RunBundle;
   busy: boolean;
+  latestLog: ChoiceLogView | null;
   onRestart: () => void;
 }) {
   const won = bundle.run.status === "won";
 
   return (
     <section aria-label="Complete" className="complete-panel">
-      <h2>{won ? storyText.victoryTitle : storyText.defeatTitle}</h2>
-      <p>{won ? storyText.victoryDescription : storyText.defeatDescription}</p>
+      <div className="panel-heading">
+        <div>
+          <h2>{won ? storyText.victoryTitle : storyText.defeatTitle}</h2>
+          <p>
+            {won ? storyText.victoryDescription : storyText.defeatDescription}
+          </p>
+        </div>
+        {latestLog ? <LatestResultBadge log={latestLog} /> : null}
+      </div>
       <button disabled={busy} onClick={onRestart} type="button">
         Restart
       </button>
@@ -911,7 +940,7 @@ function StatsPanel({ bundle }: { bundle: RunBundle }) {
             const strain = bundle.character.strain[stat];
 
             return (
-              <tr key={stat}>
+              <tr className={`stat-tone ${statClass(stat)}`} key={stat}>
                 <th scope="row">{statLabels[stat]}</th>
                 <td>
                   <b>{base + equipment}</b>
@@ -941,7 +970,12 @@ function EquippedPanel({ bundle }: { bundle: RunBundle }) {
           const text = itemId > 0 ? getItemText(itemId) : null;
 
           return (
-            <li key={slot}>
+            <li
+              className={
+                item ? `stat-tone ${statClass(getItemPrimaryStat(item))}` : ""
+              }
+              key={slot}
+            >
               <b>{slotLabels[slot]}</b>
               <p>{text?.name ?? "Empty"}</p>
               {item ? (
@@ -986,13 +1020,18 @@ function InventoryPanel({
             pendingAction?.kind === "equip" && pendingAction.itemId === itemId;
 
           return (
-            <li key={itemId}>
+            <li
+              className={`stat-tone ${statClass(getItemPrimaryStat(item))}`}
+              key={itemId}
+              title={text.description}
+            >
               <ItemIcon itemId={itemId} />
               <div>
                 <strong>{text.name}</strong>
                 <p>
-                  {slotLabels[item.slot]} tier {item.tier}. {text.description}
+                  {slotLabels[item.slot]} tier {item.tier}
                 </p>
+                <p className="item-description">{text.description}</p>
                 <ItemBonusList item={item} />
               </div>
               <button
@@ -1013,7 +1052,7 @@ function InventoryPanel({
 function HistoryPanel({ logs }: { logs: ChoiceLogView[] }) {
   return (
     <section aria-label="Log" className="history-panel">
-      <h2>Log</h2>
+      <h3>Log</h3>
       {logs.length === 0 ? <p>No actions yet.</p> : null}
       <ol>
         {logs.map((log) => {
@@ -1082,6 +1121,16 @@ function statIconFor(stat: StatId): string {
   }
 }
 
+function statClass(stat: StatId): string {
+  return `stat-${stat}`;
+}
+
+function getItemPrimaryStat(item: ItemView): StatId {
+  return statIds.reduce((primary, stat) =>
+    (item.bonuses[stat] ?? 0) > (item.bonuses[primary] ?? 0) ? stat : primary,
+  );
+}
+
 function ItemBonusList({ item }: { item: ItemView }) {
   const bonuses = statIds
     .map((stat) => ({
@@ -1095,9 +1144,11 @@ function ItemBonusList({ item }: { item: ItemView }) {
   return (
     <b className="bonus-list">
       {" "}
-      {bonuses
-        .map((bonus) => `+${bonus.value} ${statShortLabels[bonus.stat]}`)
-        .join(", ")}
+      {bonuses.map((bonus) => (
+        <span className={`stat-tone ${statClass(bonus.stat)}`} key={bonus.stat}>
+          +{bonus.value} {statShortLabels[bonus.stat]}
+        </span>
+      ))}
     </b>
   );
 }
@@ -1154,21 +1205,6 @@ function getLatestChoiceLog(bundle: RunBundle): ChoiceLogView | null {
     (latest, log) => (!latest || log.index > latest.index ? log : latest),
     null,
   );
-}
-
-function getChoiceResultText(log: ChoiceLogView): string {
-  if (log.bossDefeated) return "Boss defeated";
-  if (log.gameEnded && log.success) return "Victory";
-  if (log.gameEnded) return "Defeat";
-
-  const parts = [log.success ? "Success" : "Failure"];
-  if (log.statGain > 0) {
-    parts.push(`+${log.statGain} ${statLabels[log.stat]}`);
-  }
-  if (log.healthDeltaAmount > 0) {
-    parts.push(`${formatDelta(log.healthDeltaSign, log.healthDeltaAmount)} health`);
-  }
-  return parts.join(" / ");
 }
 
 function formatApproach(approach: ChoiceForecastView["approach"]): string {

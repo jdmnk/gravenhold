@@ -30,6 +30,8 @@ import {
   statShortLabels,
   type ChoiceForecastView,
   type ChoiceLogView,
+  type EncounterCategory,
+  type EncounterDifficulty,
   type EquipmentSlot,
   type ItemView,
   type RewardOfferView,
@@ -52,10 +54,23 @@ const choiceStatIconSrc: Record<StatId, string> = {
   strength: "/assets/game/ui/str-icon.png",
 };
 const choiceStatNames: Record<StatId, string> = {
-  agility: "AGI",
-  intellect: "DEX",
-  spirit: "SPIRIT",
-  strength: "STR",
+  agility: "Agility",
+  intellect: "Intellect",
+  spirit: "Spirit",
+  strength: "Strength",
+};
+const encounterCategoryLabels: Record<EncounterCategory, string> = {
+  boss: "Boss",
+  enemy: "Enemy",
+  mystery: "Mystery",
+  obstacle: "Obstacle",
+  social: "Social",
+  survival: "Survival",
+};
+const encounterDifficultyLabels: Record<EncounterDifficulty, string> = {
+  boss: "Boss",
+  hard: "Hard",
+  normal: "Normal",
 };
 
 type ChainConnection =
@@ -82,7 +97,12 @@ type RunVisualEvents = {
   latestLogIndex: number | null;
   levelChanged: boolean;
   newInventoryItemIds: ReadonlySet<number>;
-  result: { key: string; text: string; tone: "bad" | "good" } | null;
+  result: {
+    details: string[];
+    key: string;
+    text: string;
+    tone: "bad" | "good";
+  } | null;
   sceneKey: string;
 };
 
@@ -503,6 +523,7 @@ function GameConsole({
           onSeedInputChange={onSeedInputChange}
         />
       </header>
+      <RunProgressStrip bundle={bundle} />
 
       <div className="main-grid">
         <aside className="equipment-section">
@@ -723,6 +744,8 @@ function RewardSlotCard({
 }) {
   const item = getItemView(bundle, reward.itemId);
   const text = getItemText(reward.itemId);
+  const equippedItem = getEquippedItemForSlot(bundle, item.slot);
+  const dominantStat = getDominantEffectiveStat(bundle);
   const isSelected =
     pendingAction?.kind === "reward" && pendingAction.rewardIndex === reward.index;
 
@@ -737,6 +760,11 @@ function RewardSlotCard({
       <ItemIcon itemId={reward.itemId} size="lg" />
       <div className="reward-copy">
         <ItemBonusList item={item} compact />
+        <RewardComparison
+          dominantStat={dominantStat}
+          equippedItem={equippedItem}
+          offeredItem={item}
+        />
       </div>
       <div className="reward-actions">
         <button
@@ -896,6 +924,7 @@ function SceneHud({
           <strong>{value}</strong>
         </div>
       ))}
+      <BuildIdentityChip bundle={bundle} />
       <div
         className={[
           "health-meter",
@@ -918,6 +947,62 @@ function SceneHud({
         </div>
       </div>
     </section>
+  );
+}
+
+function RunProgressStrip({ bundle }: { bundle: RunBundle }) {
+  const maxLevel = 20;
+  const bossLevels = new Set([5, 10, 15, 20]);
+
+  return (
+    <nav className="run-progress-strip" aria-label="Run progress">
+      {Array.from({ length: maxLevel }, (_, index) => {
+        const level = index + 1;
+        const completed =
+          bundle.run.status === "won" || level < bundle.run.level;
+        const active =
+          level === bundle.run.level &&
+          bundle.run.status !== "won" &&
+          bundle.run.status !== "lost";
+        const boss = bossLevels.has(level);
+
+        return (
+          <span
+            aria-label={`Level ${level}${boss ? " boss" : ""}${active ? " current" : completed ? " cleared" : ""}`}
+            className={[
+              "run-progress-node",
+              completed ? "run-progress-node-complete" : "",
+              active ? "run-progress-node-active" : "",
+              boss ? "run-progress-node-boss" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            key={level}
+          >
+            {level}
+          </span>
+        );
+      })}
+    </nav>
+  );
+}
+
+function BuildIdentityChip({ bundle }: { bundle: RunBundle }) {
+  const dominantStat = getDominantEffectiveStat(bundle);
+  const recentFocus = getRecentChoiceFocus(bundle);
+  const focusLabel =
+    recentFocus.total === 0
+      ? "unformed"
+      : recentFocus.ratio >= 0.6
+        ? "focused"
+        : "drifting";
+
+  return (
+    <div className={`scene-hud-chip build-chip build-chip-${dominantStat}`}>
+      <span>Build</span>
+      <strong>{choiceStatNames[dominantStat]}</strong>
+      <em>{focusLabel}</em>
+    </div>
   );
 }
 
@@ -1090,6 +1175,7 @@ function EncounterPanel({
         backgroundImage: `linear-gradient(180deg, rgba(17,13,9,0.12), rgba(17,13,9,0.18) 48%, rgba(17,13,9,0.62)), url(${backgroundImage})`,
       }}
       event={event}
+      meta={<EncounterDossier bundle={bundle} />}
       subtitle={`${current.category} / ${current.difficultyKind}`}
       subtitleClassName="encounter-subtitle"
       tactical={tactical}
@@ -1109,6 +1195,7 @@ function SceneStage({
   children,
   className,
   event,
+  meta,
   style,
   subtitle,
   subtitleClassName,
@@ -1120,6 +1207,7 @@ function SceneStage({
   children?: ReactNode;
   className: string;
   event: SceneEvent;
+  meta?: ReactNode;
   style?: CSSProperties;
   subtitle?: string;
   subtitleClassName?: string;
@@ -1137,12 +1225,98 @@ function SceneStage({
 
         <SceneEventDock event={event} />
 
+        {meta ? <div className="scene-stage-meta">{meta}</div> : null}
+
         <div className="scene-stage-tactical">{tactical}</div>
 
         {body ? <p className="scene-stage-description">{body}</p> : null}
         {children}
       </div>
     </section>
+  );
+}
+
+function EncounterDossier({ bundle }: { bundle: RunBundle }) {
+  const current = bundle.currentEncounter!;
+  const forecasts = bundle.forecasts;
+  const firstForecast = forecasts ? forecasts[statIds[0]] : null;
+  const bossForecast = forecasts
+    ? statIds.map((stat) => forecasts[stat]).find((forecast) => forecast.bossEncounter)
+    : null;
+  const bossSupport =
+    bossForecast && bossForecast.bossSupportRequired > 0
+      ? `${bossForecast.bossSupportValue}/${bossForecast.bossSupportRequired}`
+      : null;
+  type DossierProp = {
+    label: string;
+    priority?: "primary";
+    tone?: string;
+    value: string;
+  };
+  const props: DossierProp[] = [
+    {
+      label: "Type",
+      priority: "primary",
+      tone: `category-${current.category}`,
+      value: encounterCategoryLabels[current.category],
+    },
+    {
+      label: "Difficulty",
+      priority: "primary",
+      tone: `difficulty-${current.difficultyKind}`,
+      value: encounterDifficultyLabels[current.difficultyKind],
+    },
+    {
+      label: "Base Difficulty",
+      value: String(firstForecast?.baseDifficulty ?? current.baseDifficulty),
+    },
+  ];
+
+  if (bossSupport && bossForecast) {
+    props.push({
+      label: "Support",
+      tone:
+        bossForecast.bossSupportValue >= bossForecast.bossSupportRequired
+          ? "support-ready"
+          : "support-risk",
+      value: bossSupport,
+    });
+
+    if (bossForecast.bossSupportDifficultyAmount > 0) {
+      props.push({
+        label: "Boss Difficulty",
+        tone: "support-risk",
+        value: `+${bossForecast.bossSupportDifficultyAmount}`,
+      });
+    }
+
+    if (bossForecast.bossSupportDamageAmount > 0) {
+      props.push({
+        label: "Boss Damage",
+        tone: "support-risk",
+        value: `+${bossForecast.bossSupportDamageAmount}`,
+      });
+    }
+  }
+
+  return (
+    <dl className="encounter-dossier" aria-label="Encounter details">
+      {props.map((prop) => (
+        <div
+          className={[
+            "encounter-dossier-prop",
+            prop.priority ? `encounter-dossier-prop-${prop.priority}` : "",
+            prop.tone ? `encounter-dossier-${prop.tone}` : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          key={prop.label}
+        >
+          <dt>{prop.label}</dt>
+          <dd>{prop.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -1154,7 +1328,12 @@ function SceneEventDock({ event }: { event: SceneEvent }) {
           className={`result-burst result-burst-${event.result.tone}`}
           key={event.result.key}
         >
-          {event.result.text}
+          <strong>{event.result.text}</strong>
+          <span className="result-breakdown">
+            {event.result.details.map((detail) => (
+              <span key={detail}>{detail}</span>
+            ))}
+          </span>
         </div>
       ) : null}
       {event.pendingLabel ? (
@@ -1175,14 +1354,21 @@ function ChoicePreviewOverlay({
   optionLabel: string;
   stat: StatId;
 }) {
+  const margin = forecast.effectiveStat - forecast.difficulty;
   const outcome = forecast.success ? "Likely success" : "Failure risk";
+  const marginText =
+    margin > 0
+      ? `Pass by ${margin}`
+      : margin === 0
+        ? "Pass exactly"
+        : `Short by ${Math.abs(margin)}`;
   const payoff =
     forecast.winsOnSuccess
       ? "Victory"
       : forecast.opensRewardOnSuccess
         ? "Reward opens"
         : forecast.statGainOnSuccess > 0
-          ? `+${forecast.statGainOnSuccess} ${statShortLabels[stat]}`
+          ? `+${forecast.statGainOnSuccess} ${choiceStatNames[stat]}`
           : "No growth";
   const danger = forecast.success
     ? forecast.approach === "strained"
@@ -1201,11 +1387,27 @@ function ChoicePreviewOverlay({
         <span>{choiceStatNames[stat]}</span>
         <strong>{optionLabel}</strong>
       </div>
-      <div className="choice-preview-check">
-        <span>Check</span>
-        <strong>
-          {forecast.effectiveStat}/{forecast.difficulty}
-        </strong>
+      <div className="choice-preview-math">
+        <div>
+          <span>Your {choiceStatNames[stat]}</span>
+          <strong>{forecast.effectiveStat}</strong>
+        </div>
+        <div>
+          <span>Needed Difficulty</span>
+          <strong>{forecast.difficulty}</strong>
+        </div>
+        <div>
+          <span>Result</span>
+          <strong
+            className={
+              margin >= 0
+                ? "choice-preview-margin-good"
+                : "choice-preview-margin-bad"
+            }
+          >
+            {marginText}
+          </strong>
+        </div>
       </div>
       <div className="choice-preview-lines">
         <span
@@ -1216,6 +1418,9 @@ function ChoicePreviewOverlay({
           }
         >
           {outcome}
+        </span>
+        <span className="choice-preview-line-muted">
+          Approach: {formatApproach(forecast.approach)}
         </span>
         <span className="choice-preview-line-good">{payoff}</span>
         <span
@@ -1397,6 +1602,7 @@ function createRunVisualEvents(
     newInventoryItemIds,
     result: latestLog
       ? {
+          details: getChoiceResultDetails(latestLog),
           key: `${current.run.id}-${latestLog.index}-${current.character.health}`,
           text: getChoiceResultText(latestLog),
           tone: latestLog.success ? "good" : "bad",
@@ -1441,12 +1647,44 @@ function getChoiceResultText(log: ChoiceLogView): string {
 
   const parts = [log.success ? "SUCCESS" : "FAILURE"];
   if (log.statGain > 0) {
-    parts.push(`+${log.statGain} ${statShortLabels[log.stat]}`);
+    parts.push(`+${log.statGain} ${choiceStatNames[log.stat]}`);
   }
   if (log.healthDeltaAmount > 0) {
-    parts.push(`${formatDelta(log.healthDeltaSign, log.healthDeltaAmount)} HP`);
+    parts.push(`${formatDelta(log.healthDeltaSign, log.healthDeltaAmount)} Health`);
   }
   return parts.join(" / ");
+}
+
+function getChoiceResultDetails(log: ChoiceLogView): string[] {
+  const details = [
+    `${choiceStatNames[log.stat]} ${log.effectiveStat} / Difficulty ${log.difficulty}`,
+  ];
+
+  if (log.statGain > 0) {
+    details.push(`+${log.statGain} ${choiceStatNames[log.stat]}`);
+  }
+  if (log.healthDeltaAmount > 0) {
+    details.push(`${formatDelta(log.healthDeltaSign, log.healthDeltaAmount)} Health`);
+  }
+  if (log.completedLevel) {
+    details.push(log.gameEnded ? "Run complete" : "Level clear");
+  }
+  if (log.bossDefeated) {
+    details.push("Gate fallen");
+  }
+
+  return details;
+}
+
+function formatApproach(approach: ChoiceForecastView["approach"]): string {
+  switch (approach) {
+    case "favored":
+      return "Favored";
+    case "standard":
+      return "Standard";
+    case "strained":
+      return "Strained";
+  }
 }
 
 function getPendingActionLabel(action: PendingAction): string {
@@ -1539,6 +1777,59 @@ function ItemBonusList({
   );
 }
 
+function RewardComparison({
+  dominantStat,
+  equippedItem,
+  offeredItem,
+}: {
+  dominantStat: StatId;
+  equippedItem: ItemView | null;
+  offeredItem: ItemView;
+}) {
+  const deltas = statIds
+    .map((stat) => ({
+      stat,
+      value:
+        (offeredItem.bonuses[stat] ?? 0) -
+        (equippedItem?.bonuses[stat] ?? 0),
+    }))
+    .filter((delta) => delta.value !== 0);
+  const dominantDelta =
+    (offeredItem.bonuses[dominantStat] ?? 0) -
+    (equippedItem?.bonuses[dominantStat] ?? 0);
+  const summary = !equippedItem
+    ? "Empty slot"
+    : dominantDelta > 0
+      ? `Build +${dominantDelta}`
+      : deltas.some((delta) => delta.value > 0)
+        ? "Sidegrade"
+        : deltas.length === 0
+          ? "Even"
+          : "Tradeoff";
+
+  return (
+    <div className="reward-comparison" aria-label="Reward comparison">
+      <span className="reward-comparison-summary">{summary}</span>
+      {deltas.length > 0 ? (
+        <div className="reward-delta-list">
+          {deltas.map((delta) => (
+            <span
+              className={[
+                "reward-delta",
+                delta.value > 0 ? "reward-delta-good" : "reward-delta-bad",
+              ].join(" ")}
+              key={delta.stat}
+            >
+              {delta.value > 0 ? "+" : ""}
+              {delta.value} {statShortLabels[delta.stat]}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function getHealthPercent(bundle: RunBundle): number {
   return Math.max(
     0,
@@ -1598,6 +1889,14 @@ function getItemView(bundle: RunBundle, id: number) {
   return item;
 }
 
+function getEquippedItemForSlot(
+  bundle: RunBundle,
+  slot: EquipmentSlot,
+): ItemView | null {
+  const itemId = bundle.character.equipment[slot];
+  return itemId > 0 ? getItemView(bundle, itemId) : null;
+}
+
 function getEquipmentStatBonus(bundle: RunBundle, stat: StatId): number {
   return equipmentSlots.reduce((total, slot) => {
     const itemId = bundle.character.equipment[slot];
@@ -1608,6 +1907,38 @@ function getEquipmentStatBonus(bundle: RunBundle, stat: StatId): number {
 
 function getEffectiveStat(bundle: RunBundle, stat: StatId): number {
   return bundle.character.baseStats[stat] + getEquipmentStatBonus(bundle, stat);
+}
+
+function getDominantEffectiveStat(bundle: RunBundle): StatId {
+  return statIds.reduce((dominant, stat) =>
+    getEffectiveStat(bundle, stat) > getEffectiveStat(bundle, dominant)
+      ? stat
+      : dominant,
+  );
+}
+
+function getRecentChoiceFocus(bundle: RunBundle): {
+  dominantStat: StatId;
+  ratio: number;
+  total: number;
+} {
+  const counts = Object.fromEntries(
+    statIds.map((stat) => [stat, 0]),
+  ) as Record<StatId, number>;
+
+  for (const choice of bundle.recentChoices) {
+    counts[choice.stat] += 1;
+  }
+
+  const dominantStat = statIds.reduce((dominant, stat) =>
+    counts[stat] > counts[dominant] ? stat : dominant,
+  );
+  const total = bundle.recentChoices.length;
+  return {
+    dominantStat,
+    ratio: total === 0 ? 0 : counts[dominantStat] / total,
+    total,
+  };
 }
 
 function shortAddress(address: string): string {

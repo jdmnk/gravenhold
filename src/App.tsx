@@ -1,6 +1,7 @@
 import * as Popover from "@radix-ui/react-popover";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
+  type CSSProperties,
   type ReactNode,
   useCallback,
   useEffect,
@@ -788,6 +789,7 @@ function EncounterPanel({
             busy={busy}
             forecast={bundle.forecasts![stat]}
             key={stat}
+            secondaryStat={getChoiceSecondaryStat(bundle, bundle.forecasts![stat])}
             stat={stat}
             text={currentText.options[stat]}
             onChoose={onChooseStat}
@@ -846,24 +848,36 @@ function EncounterDetailsPopover({
 function ChoiceButton({
   busy,
   forecast,
+  secondaryStat,
   stat,
   text,
   onChoose,
 }: {
   busy: boolean;
   forecast: ChoiceForecastView;
+  secondaryStat: StatId | null;
   stat: StatId;
   text: { description: string; label: string };
   onChoose: (stat: StatId) => void;
 }) {
+  const style = secondaryStat
+    ? ({
+        "--secondary-stat-color": statColorFor(secondaryStat),
+      } as CSSProperties)
+    : undefined;
+
   return (
     <article
       className={[
         "choice-card",
         "stat-tone",
         statClass(stat),
+        secondaryStat ? "choice-card-dual-stat" : "",
         forecast.success ? "choice-likely" : "choice-danger",
-      ].join(" ")}
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      style={style}
     >
       <div className="choice-topline">
         <img
@@ -912,6 +926,18 @@ function ChoiceButton({
       </button>
     </article>
   );
+}
+
+function getChoiceSecondaryStat(
+  bundle: RunBundle,
+  forecast: ChoiceForecastView,
+): StatId | null {
+  if (!forecast.bossEncounter || forecast.bossSupportRequired <= 0) {
+    return null;
+  }
+
+  const supportStat = getSecondHighestEffectiveStat(bundle);
+  return supportStat === forecast.stat ? null : supportStat;
 }
 
 function RewardPanel({
@@ -1167,16 +1193,13 @@ function GearItemRow({
   text: ReturnType<typeof getItemText> | null;
 }) {
   const row = (
-    <li
-      className={item ? `stat-tone ${statClass(getItemPrimaryStat(item))}` : ""}
-      tabIndex={text ? 0 : undefined}
-    >
+    <li tabIndex={text ? 0 : undefined}>
       {item ? <ItemIcon itemId={item.itemId} /> : <div className="empty-icon" />}
-      <div>
+      <div className="gear-item-main">
         <strong>{slotLabels[slot]}</strong>
         <p>{text?.name ?? "Empty"}</p>
-        {item ? <ItemBonusList item={item} /> : null}
       </div>
+      {item ? <ItemBonusList item={item} /> : null}
       {action ? <div className="gear-action">{action}</div> : null}
     </li>
   );
@@ -1284,6 +1307,19 @@ function statIconFor(stat: StatId): string {
 
 function statClass(stat: StatId): string {
   return `stat-${stat}`;
+}
+
+function statColorFor(stat: StatId): string {
+  switch (stat) {
+    case "strength":
+      return "#d9553f";
+    case "intellect":
+      return "#c192ff";
+    case "agility":
+      return "#70c86f";
+    case "spirit":
+      return "#e1c661";
+  }
 }
 
 function getItemPrimaryStat(item: ItemView): StatId {
@@ -1482,6 +1518,14 @@ function getDominantEffectiveStat(bundle: RunBundle): StatId {
       ? stat
       : dominant,
   );
+}
+
+function getSecondHighestEffectiveStat(bundle: RunBundle): StatId {
+  const sorted = [...statIds].sort(
+    (first, second) =>
+      getEffectiveStat(bundle, second) - getEffectiveStat(bundle, first),
+  );
+  return sorted[1] ?? sorted[0];
 }
 
 function getRecentChoiceFocus(bundle: RunBundle): string {

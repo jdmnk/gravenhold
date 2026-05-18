@@ -642,6 +642,48 @@ img {
   gap: 8px;
 }
 
+.reward-art {
+  position: relative;
+  min-height: clamp(180px, 25vh, 320px);
+  border: 3px solid #2d2119;
+  background-color: #17120f;
+  background-position: center;
+  background-size: cover;
+  image-rendering: pixelated;
+  overflow: hidden;
+}
+
+.reward-art::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(13, 9, 8, 0.62));
+  pointer-events: none;
+}
+
+.reward-copy {
+  position: absolute;
+  z-index: 1;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.reward-copy h2 {
+  color: #ffd37a;
+  text-shadow: 0 3px 0 #1b0d08;
+}
+
+.reward-copy p {
+  max-width: 760px;
+  color: #f1d9af;
+  text-shadow: 0 2px 0 #1b0d08;
+}
+
 .panel-heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

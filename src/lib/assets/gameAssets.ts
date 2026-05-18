@@ -24,6 +24,8 @@ export type EncounterAssetId =
 
 const base = "/assets/game";
 
+export const levelClearedBackground = `${base}/backgrounds/level-cleared.webp`;
+
 export const encounterBackgrounds: Partial<Record<number, string>> = {
   1: `${base}/backgrounds/fallen-gate-retro.webp`,
   2: `${base}/backgrounds/mudslide-path-retro.webp`,

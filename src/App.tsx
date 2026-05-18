@@ -12,7 +12,11 @@ import {
   createGameSession,
   type GameSession,
 } from "@/lib/chain/account/session";
-import { encounterBackgroundFor, itemIconFor } from "@/lib/assets/gameAssets";
+import {
+  encounterBackgroundFor,
+  itemIconFor,
+  levelClearedBackground,
+} from "@/lib/assets/gameAssets";
 import { getNetwork, type GravenholdNetwork } from "@/lib/chain/networkConfig";
 import {
   chooseOption,
@@ -924,12 +928,17 @@ function RewardPanel({
 }) {
   return (
     <section aria-label="Rewards" className="reward-panel">
-      <div className="panel-heading">
-        <div>
-          <h2>{storyText.levelClearedTitle}</h2>
-          <p>{storyText.levelClearedDescription}</p>
+      <div
+        className="reward-art"
+        style={{ backgroundImage: `url(${levelClearedBackground})` }}
+      >
+        <div className="reward-copy">
+          <div>
+            <h2>{storyText.levelClearedTitle}</h2>
+            <p>{storyText.levelClearedDescription}</p>
+          </div>
+          {latestLog ? <LatestResultBadge log={latestLog} /> : null}
         </div>
-        {latestLog ? <LatestResultBadge log={latestLog} /> : null}
       </div>
       <div className="reward-grid">
         {bundle.rewards.map((reward) => {

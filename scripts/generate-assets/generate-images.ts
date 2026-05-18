@@ -23,6 +23,7 @@ type CliOptions = {
   dryRun: boolean;
   force: boolean;
   id: string | null;
+  provider: "openai" | "openrouter";
 };
 
 function parseArgs(): CliOptions {
@@ -32,6 +33,7 @@ function parseArgs(): CliOptions {
     dryRun: false,
     force: false,
     id: null,
+    provider: "openai",
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -49,6 +51,13 @@ function parseArgs(): CliOptions {
       index += 1;
     } else if (arg === "--id" && args[index + 1]) {
       opts.id = args[index + 1];
+      index += 1;
+    } else if (arg === "--provider" && args[index + 1]) {
+      const provider = args[index + 1];
+      if (provider !== "openai" && provider !== "openrouter") {
+        throw new Error(`Unknown provider ${provider}. Valid: openai, openrouter`);
+      }
+      opts.provider = provider;
       index += 1;
     } else if (arg === "--help" || arg === "-h") {
       printUsage();
@@ -69,12 +78,14 @@ Options:
   --dry-run               Print planned assets and prompts without API calls
   --category <category>   Generate one category: ${IMAGE_CATEGORIES.join(", ")}
   --id <asset-id>         Generate one asset by id
+  --provider <provider>   Image backend: openai or openrouter, default openai
   --force                 Regenerate existing files
   --help, -h              Show this help
 
 Examples:
   npm run generate:images -- --dry-run
   npm run generate:images -- --id fallen-gate
+  npm run generate:images -- --id level-cleared --provider openrouter
   npm run generate:images -- --category items --force
 `.trim());
 }
@@ -119,6 +130,7 @@ async function processAsset(asset: ImageAssetDef, opts: CliOptions): Promise<boo
     format: asset.format,
     outputPath: out,
     prompt,
+    provider: opts.provider,
     size: asset.size,
     transparent: asset.transparent,
   });
@@ -136,7 +148,8 @@ async function run() {
   console.log("Gravenhold Image Generator");
   console.log(`  queued: ${assets.length}${opts.dryRun ? " (dry run)" : ""}`);
   console.log(`  output: ${OUTPUT_ROOT}`);
-  console.log(`  model:  ${IMAGE_MODEL}`);
+  console.log(`  model:  ${displayModel(opts.provider)}`);
+  console.log(`  provider: ${opts.provider}`);
   console.log(`  quality: ${IMAGE_QUALITY}`);
   console.log("");
 
@@ -160,6 +173,14 @@ async function run() {
 
   console.log("");
   console.log(`Complete: ${generated} generated, ${skipped} skipped`);
+}
+
+function displayModel(provider: CliOptions["provider"]): string {
+  if (provider === "openrouter") {
+    return process.env.OPENROUTER_IMAGE_MODEL ?? "openai/gpt-5-image-mini";
+  }
+
+  return IMAGE_MODEL;
 }
 
 function sleep(ms: number) {

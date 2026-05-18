@@ -26,6 +26,15 @@
       "format": "webp",
       "description": "a tense clearing before a stone guardian outpost, crude watchfires, shield-marked standing stones, distant scout silhouettes implied by shadows only",
       "intendedUse": "hard enemy encounter backdrop"
+    },
+    {
+      "id": "level-cleared",
+      "filename": "level-cleared.webp",
+      "category": "backgrounds",
+      "size": "1536x1024",
+      "format": "webp",
+      "description": "a quiet fantasy RPG victory rest scene after a dangerous level is cleared, opened path beyond a ruined stone threshold, warm torchlight and sunrise glow, scattered spent gear and banners, calm readable center space for reward UI overlays, no characters",
+      "intendedUse": "generic level cleared backdrop shown before reward selection"
     }
   ],
   "items": [

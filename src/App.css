@@ -406,14 +406,14 @@ img {
 
 .progression-panel {
   height: 100%;
-  padding: 8px;
+  padding: 12px;
   overflow: auto;
 }
 
 .progression-panel ol {
   display: grid;
   gap: 4px;
-  margin: 7px 0 0;
+  margin: 10px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -454,7 +454,7 @@ img {
 .complete-panel {
   height: 100%;
   min-height: 0;
-  padding: 9px;
+  padding: 12px;
   overflow: auto;
 }
 
@@ -501,24 +501,11 @@ img {
   text-shadow: 0 2px 0 #1b0d08;
 }
 
-.encounter-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 7px 0 8px;
-}
-
-.encounter-meta b {
-  padding: 4px 8px;
-  border: 1px solid #604531;
-  color: #d9b168;
-  background: rgba(17, 12, 10, 0.72);
-}
-
 .choice-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .choice-grid > h3 {
@@ -671,7 +658,7 @@ img {
 
 .stats-panel,
 .gear-panel {
-  padding: 8px;
+  padding: 12px;
 }
 
 .stats-panel table {
@@ -713,8 +700,8 @@ img {
 }
 
 .gear-section + .gear-section {
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid #3a2a20;
 }
 
@@ -805,6 +792,54 @@ img {
   position: absolute;
   top: 10px;
   right: 10px;
+}
+
+.encounter-details-trigger {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  left: 10px;
+  min-height: 30px;
+  padding: 3px 9px;
+  border-color: #604531;
+  color: #f2d390;
+  background: rgba(15, 10, 8, 0.86);
+  box-shadow: none;
+}
+
+.encounter-details-popover {
+  z-index: 30;
+  min-width: 170px;
+  padding: 10px;
+  border: 2px solid #604631;
+  color: #f3dfb5;
+  background:
+    linear-gradient(rgba(22, 15, 11, 0.98), rgba(13, 9, 8, 0.98)),
+    url("/assets/game/ui/section-texture.png") center / 220px;
+  box-shadow:
+    inset 0 0 0 3px rgba(10, 7, 6, 0.86),
+    0 8px 18px rgba(0, 0, 0, 0.32);
+}
+
+.encounter-details-popover dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.encounter-details-popover div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+}
+
+.encounter-details-popover dt {
+  color: #a98567;
+}
+
+.encounter-details-popover dd {
+  margin: 0;
+  color: #e1bc74;
 }
 
 .history-panel {

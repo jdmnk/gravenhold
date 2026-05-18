@@ -730,16 +730,15 @@ function EncounterPanel({
         style={{ backgroundImage: `url(${background})` }}
       >
         {latestLog ? <LatestResultBadge log={latestLog} /> : null}
+        <EncounterDetailsPopover
+          baseDifficulty={current.baseDifficulty}
+          category={encounterCategoryLabels[current.category]}
+          difficulty={encounterDifficultyLabels[current.difficultyKind]}
+        />
         <div className="encounter-copy">
           <h2>{currentText.title}</h2>
           <p>{currentText.description}</p>
         </div>
-      </div>
-
-      <div className="encounter-meta">
-        <b>{encounterCategoryLabels[current.category]}</b>
-        <b>{encounterDifficultyLabels[current.difficultyKind]}</b>
-        <b>Difficulty {current.baseDifficulty}</b>
       </div>
 
       <section aria-label="Choices" className="choice-grid">
@@ -756,6 +755,51 @@ function EncounterPanel({
         ))}
       </section>
     </section>
+  );
+}
+
+function EncounterDetailsPopover({
+  baseDifficulty,
+  category,
+  difficulty,
+}: {
+  baseDifficulty: number;
+  category: string;
+  difficulty: string;
+}) {
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button className="encounter-details-trigger" type="button">
+          Details
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="start"
+          className="encounter-details-popover"
+          collisionPadding={10}
+          side="bottom"
+          sideOffset={6}
+        >
+          <dl>
+            <div>
+              <dt>Type</dt>
+              <dd>{category}</dd>
+            </div>
+            <div>
+              <dt>Threat</dt>
+              <dd>{difficulty}</dd>
+            </div>
+            <div>
+              <dt>Difficulty</dt>
+              <dd>{baseDifficulty}</dd>
+            </div>
+          </dl>
+          <Popover.Arrow className="popover-arrow" />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 

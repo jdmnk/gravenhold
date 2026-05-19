@@ -50,7 +50,6 @@ import { useGameAudio } from "@/lib/audio/useGameAudio";
 import {
   hasSeenHowItWorksIntro,
   markHowItWorksIntroSeen,
-  resetHowItWorksIntroSeen,
 } from "@/lib/onboarding/onboardingState";
 import {
   encounterText,
@@ -326,8 +325,8 @@ export default function Home() {
   }
 
   function handleShowIntroScreen() {
-    resetHowItWorksIntroSeen();
-    setHasSeenHowItWorks(false);
+    markHowItWorksIntroSeen();
+    setHasSeenHowItWorks(true);
     setHowItWorksOpen(false);
     setPendingAction(null);
     setNotice(null);

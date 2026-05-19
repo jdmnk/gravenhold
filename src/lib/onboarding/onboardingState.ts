@@ -15,11 +15,3 @@ export function markHowItWorksIntroSeen() {
     // Non-critical UI preference. Gameplay state stays onchain.
   }
 }
-
-export function resetHowItWorksIntroSeen() {
-  try {
-    window.localStorage.removeItem(HOW_IT_WORKS_SEEN_KEY);
-  } catch {
-    // Non-critical UI preference. Gameplay state stays onchain.
-  }
-}

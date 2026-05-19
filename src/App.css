@@ -251,21 +251,24 @@ img {
   background: #bd8f3d;
 }
 
-.options-trigger {
-  min-width: 150px;
-  height: 100%;
+.chrome-trigger {
   color: #f2d390;
   background:
     linear-gradient(rgba(18, 13, 10, 0.88), rgba(18, 13, 10, 0.88)),
     url("/assets/game/ui/bg-dark.png") center / 120px;
   border-color: #4b3828;
-  text-align: left;
-  padding: 6px 10px;
 }
 
-.options-trigger:hover:not(:disabled),
-.options-trigger:focus-visible:not(:disabled) {
+.chrome-trigger:hover:not(:disabled),
+.chrome-trigger:focus-visible:not(:disabled) {
   color: #2b1b13;
+}
+
+.options-trigger {
+  min-width: 150px;
+  height: 100%;
+  text-align: left;
+  padding: 6px 10px;
 }
 
 .options-popover {
@@ -965,9 +968,6 @@ img {
   left: 10px;
   min-height: 30px;
   padding: 3px 9px;
-  border-color: #604531;
-  color: #f2d390;
-  background: rgba(15, 10, 8, 0.86);
   box-shadow: none;
 }
 

@@ -617,7 +617,7 @@ function OptionsPanel({
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
-        <button className="options-trigger" type="button">
+        <button className="chrome-trigger options-trigger" type="button">
           Options
         </button>
       </Popover.Trigger>
@@ -849,7 +849,7 @@ function EncounterDetailsPopover({
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
-        <button className="encounter-details-trigger" type="button">
+        <button className="chrome-trigger encounter-details-trigger" type="button">
           Details
         </button>
       </Popover.Trigger>

@@ -263,6 +263,11 @@ img {
   padding: 6px 10px;
 }
 
+.options-trigger:hover:not(:disabled),
+.options-trigger:focus-visible:not(:disabled) {
+  color: #2b1b13;
+}
+
 .options-popover {
   z-index: 20;
   width: min(460px, calc(100vw - 20px));
@@ -980,7 +985,7 @@ img {
 
 .history-panel {
   max-height: 160px;
-  padding: 8px 0 0;
+  padding: 10px;
   overflow: auto;
 }
 
@@ -998,8 +1003,12 @@ img {
   display: grid;
   gap: 4px;
   margin: 6px 0 0;
-  padding-left: 24px;
+  padding-left: 18px;
   color: #c8aa89;
+}
+
+.history-panel li {
+  overflow-wrap: anywhere;
 }
 
 .notice-panel {

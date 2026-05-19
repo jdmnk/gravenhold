@@ -1022,6 +1022,89 @@ img {
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
 }
 
+.how-it-works-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(8, 6, 5, 0.78);
+}
+
+.how-it-works-dialog {
+  display: grid;
+  gap: 14px;
+  width: min(900px, 100%);
+  max-height: min(760px, calc(100vh - 48px));
+  overflow: auto;
+  padding: 16px;
+  border: 2px solid #604631;
+  color: #f3dfb5;
+  background:
+    linear-gradient(rgba(28, 20, 16, 0.98), rgba(13, 9, 8, 0.98)),
+    url("/assets/game/ui/section-texture.png") center / 220px;
+  box-shadow:
+    inset 0 0 0 4px rgba(10, 7, 6, 0.86),
+    0 12px 28px rgba(0, 0, 0, 0.42);
+}
+
+.how-it-works-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #3d2d22;
+}
+
+.how-it-works-header h2 {
+  color: #ffd37a;
+  font-size: 44px;
+  line-height: 0.9;
+}
+
+.how-it-works-header p {
+  margin-top: 5px;
+  color: #c3a282;
+}
+
+.dialog-close {
+  min-height: 32px;
+  padding: 4px 10px;
+}
+
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rules-grid article {
+  min-height: 112px;
+  padding: 10px;
+  border: 2px solid #4b3828;
+  background:
+    linear-gradient(rgba(20, 14, 11, 0.82), rgba(11, 8, 7, 0.94)),
+    url("/assets/game/ui/bg-dark.png") center / 120px;
+}
+
+.rules-grid h3 {
+  color: #e1bc74;
+  font-size: 24px;
+}
+
+.rules-grid p {
+  margin-top: 5px;
+  color: #d6b895;
+}
+
+.how-it-works-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
 .history-panel ol {
   display: grid;
   gap: 4px;
@@ -1205,6 +1288,24 @@ img {
     bottom: 10px;
     grid-template-columns: 1fr;
   }
+
+  .how-it-works-backdrop {
+    padding: 16px;
+    place-items: stretch;
+  }
+
+  .how-it-works-dialog {
+    max-height: calc(100vh - 32px);
+  }
+
+  .how-it-works-header,
+  .rules-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .how-it-works-header h2 {
+    font-size: 38px;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1252,5 +1353,18 @@ img {
 
   .button-row {
     grid-template-columns: 1fr;
+  }
+
+  .how-it-works-backdrop {
+    padding: 10px;
+  }
+
+  .how-it-works-dialog {
+    max-height: calc(100vh - 20px);
+    padding: 12px;
+  }
+
+  .rules-grid article {
+    min-height: 0;
   }
 }

@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 
+import { HowItWorksDialog } from "@/components/onboarding/HowItWorksDialog";
 import {
   createGameSession,
   type GameSession,
@@ -46,6 +47,10 @@ import {
 } from "@/lib/chain/state";
 import { getActiveRunId, loadRunBundle } from "@/lib/chain/views";
 import { useGameAudio } from "@/lib/audio/useGameAudio";
+import {
+  hasSeenHowItWorksIntro,
+  markHowItWorksIntroSeen,
+} from "@/lib/onboarding/onboardingState";
 import {
   encounterText,
   itemText,
@@ -111,6 +116,10 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(connection.error);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [howItWorksOpen, setHowItWorksOpen] = useState(false);
+  const [hasSeenHowItWorks, setHasSeenHowItWorks] = useState(() =>
+    hasSeenHowItWorksIntro(),
+  );
 
   const { network } = connection;
   const showLocalSeed = Boolean(
@@ -303,6 +312,18 @@ export default function Home() {
   );
   const showBootLoader = !initialLoadComplete && !bundle;
 
+  useEffect(() => {
+    if (showBootLoader || bundle || hasSeenHowItWorks) return;
+    setHowItWorksOpen(true);
+  }, [bundle, hasSeenHowItWorks, showBootLoader]);
+
+  function handleHowItWorksOpenChange(open: boolean) {
+    setHowItWorksOpen(open);
+    if (open) return;
+    markHowItWorksIntroSeen();
+    setHasSeenHowItWorks(true);
+  }
+
   return (
     <Tooltip.Provider delayDuration={250} skipDelayDuration={150}>
       <main className="app-root">
@@ -316,6 +337,7 @@ export default function Home() {
             seedInput={seedInput}
             showLocalSeed={showLocalSeed}
             onSeedInputChange={setSeedInput}
+            onShowHowItWorks={() => setHowItWorksOpen(true)}
             onStartRun={handleStartRun}
           />
         ) : null}
@@ -335,8 +357,14 @@ export default function Home() {
             onReward={handleReward}
             onRestart={handleStartRun}
             onSeedInputChange={setSeedInput}
+            onShowHowItWorks={() => setHowItWorksOpen(true)}
           />
         ) : null}
+
+        <HowItWorksDialog
+          open={howItWorksOpen}
+          onOpenChange={handleHowItWorksOpenChange}
+        />
 
         {notice ? (
           <PlainNotice message={notice} onDismiss={() => setNotice(null)} />
@@ -365,6 +393,7 @@ function StartPanel({
   seedInput,
   showLocalSeed,
   onSeedInputChange,
+  onShowHowItWorks,
   onStartRun,
 }: {
   busy: boolean;
@@ -373,6 +402,7 @@ function StartPanel({
   seedInput: string;
   showLocalSeed: boolean;
   onSeedInputChange: (value: string) => void;
+  onShowHowItWorks: () => void;
   onStartRun: () => void;
 }) {
   return (
@@ -401,6 +431,9 @@ function StartPanel({
         ) : null}
         <button disabled={busy || connectingSession || !network} type="submit">
           {connectingSession ? "Connecting..." : busy ? "Starting..." : "Start"}
+        </button>
+        <button onClick={onShowHowItWorks} type="button">
+          How it works
         </button>
       </form>
     </section>
@@ -453,6 +486,7 @@ function GameConsole({
   onReward,
   onRestart,
   onSeedInputChange,
+  onShowHowItWorks,
 }: {
   bundle: RunBundle;
   busy: boolean;
@@ -467,6 +501,7 @@ function GameConsole({
   onReward: (reward: RewardOfferView, equipNow: boolean) => void;
   onRestart: () => void;
   onSeedInputChange: (value: string) => void;
+  onShowHowItWorks: () => void;
 }) {
   const pendingLabel = pendingAction ? getPendingActionLabel(pendingAction) : null;
   const showingEncounter = Boolean(
@@ -497,6 +532,7 @@ function GameConsole({
           onMusicEnabledChange={audio.setMusicEnabled}
           onRestart={onRestart}
           onSeedInputChange={onSeedInputChange}
+          onShowHowItWorks={onShowHowItWorks}
           onSfxEnabledChange={audio.setSfxEnabled}
         />
         {pendingLabel ? (
@@ -599,6 +635,7 @@ function OptionsPanel({
   onMusicEnabledChange,
   onRestart,
   onSeedInputChange,
+  onShowHowItWorks,
   onSfxEnabledChange,
 }: {
   bundle: RunBundle;
@@ -612,6 +649,7 @@ function OptionsPanel({
   onMusicEnabledChange: (enabled: boolean) => void;
   onRestart: () => void;
   onSeedInputChange: (value: string) => void;
+  onShowHowItWorks: () => void;
   onSfxEnabledChange: (enabled: boolean) => void;
 }) {
   return (
@@ -653,6 +691,10 @@ function OptionsPanel({
                 Sound effects
               </label>
             </div>
+
+            <button onClick={onShowHowItWorks} type="button">
+              How it works
+            </button>
 
             {network.profile === "dev" || network.accountMode === "local" ? (
               <form

@@ -890,11 +890,7 @@ function ChoiceButton({
         <h4>{text.label}</h4>
         <b>{statShortLabels[stat]}</b>
       </div>
-      <DescriptionTooltip content={text.description}>
-        <p className="choice-description" tabIndex={0}>
-          {text.description}
-        </p>
-      </DescriptionTooltip>
+      <p className="choice-description">{text.description}</p>
       <dl>
         <div>
           <dt>Check</dt>

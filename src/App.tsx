@@ -50,6 +50,7 @@ import { useGameAudio } from "@/lib/audio/useGameAudio";
 import {
   hasSeenHowItWorksIntro,
   markHowItWorksIntroSeen,
+  resetHowItWorksIntroSeen,
 } from "@/lib/onboarding/onboardingState";
 import {
   encounterText,
@@ -324,6 +325,16 @@ export default function Home() {
     setHasSeenHowItWorks(true);
   }
 
+  function handleShowIntroScreen() {
+    resetHowItWorksIntroSeen();
+    setHasSeenHowItWorks(false);
+    setHowItWorksOpen(false);
+    setPendingAction(null);
+    setNotice(null);
+    setInitialLoadComplete(true);
+    setBundle(null);
+  }
+
   return (
     <Tooltip.Provider delayDuration={250} skipDelayDuration={150}>
       <main className="app-root">
@@ -358,6 +369,7 @@ export default function Home() {
             onRestart={handleStartRun}
             onSeedInputChange={setSeedInput}
             onShowHowItWorks={() => setHowItWorksOpen(true)}
+            onShowIntroScreen={handleShowIntroScreen}
           />
         ) : null}
 
@@ -487,6 +499,7 @@ function GameConsole({
   onRestart,
   onSeedInputChange,
   onShowHowItWorks,
+  onShowIntroScreen,
 }: {
   bundle: RunBundle;
   busy: boolean;
@@ -502,6 +515,7 @@ function GameConsole({
   onRestart: () => void;
   onSeedInputChange: (value: string) => void;
   onShowHowItWorks: () => void;
+  onShowIntroScreen: () => void;
 }) {
   const pendingLabel = pendingAction ? getPendingActionLabel(pendingAction) : null;
   const showingEncounter = Boolean(
@@ -533,6 +547,7 @@ function GameConsole({
           onRestart={onRestart}
           onSeedInputChange={onSeedInputChange}
           onShowHowItWorks={onShowHowItWorks}
+          onShowIntroScreen={onShowIntroScreen}
           onSfxEnabledChange={audio.setSfxEnabled}
         />
         {pendingLabel ? (
@@ -636,6 +651,7 @@ function OptionsPanel({
   onRestart,
   onSeedInputChange,
   onShowHowItWorks,
+  onShowIntroScreen,
   onSfxEnabledChange,
 }: {
   bundle: RunBundle;
@@ -650,8 +666,12 @@ function OptionsPanel({
   onRestart: () => void;
   onSeedInputChange: (value: string) => void;
   onShowHowItWorks: () => void;
+  onShowIntroScreen: () => void;
   onSfxEnabledChange: (enabled: boolean) => void;
 }) {
+  const showDevControls =
+    network.profile === "dev" || network.accountMode === "local";
+
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
@@ -696,7 +716,7 @@ function OptionsPanel({
               How it works
             </button>
 
-            {network.profile === "dev" || network.accountMode === "local" ? (
+            {showDevControls ? (
               <form
                 onSubmit={(event) => {
                   event.preventDefault();
@@ -714,6 +734,12 @@ function OptionsPanel({
                   New Run
                 </button>
               </form>
+            ) : null}
+
+            {showDevControls ? (
+              <button disabled={busy} onClick={onShowIntroScreen} type="button">
+                Intro screen
+              </button>
             ) : null}
 
             <HistoryPanel logs={logs} />

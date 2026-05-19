@@ -293,6 +293,29 @@ img {
   color: #c3a282;
 }
 
+.audio-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #3d2d22;
+  border-bottom: 1px solid #3d2d22;
+}
+
+.audio-options label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #d6bea2;
+}
+
+.audio-options input {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
+}
+
 .options-panel form {
   display: grid;
   gap: 8px;

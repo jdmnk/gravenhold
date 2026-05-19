@@ -45,6 +45,7 @@ import {
   type StatId,
 } from "@/lib/chain/state";
 import { getActiveRunId, loadRunBundle } from "@/lib/chain/views";
+import { useGameAudio } from "@/lib/audio/useGameAudio";
 import {
   encounterText,
   itemText,
@@ -477,6 +478,7 @@ function GameConsole({
   const showingReward = bundle.run.phase === "reward";
   const showingComplete = bundle.run.phase === "complete";
   const latestLog = getLatestChoiceLog(bundle);
+  const audio = useGameAudio();
 
   return (
     <section aria-label="Gravenhold game" className="game-shell">
@@ -490,8 +492,12 @@ function GameConsole({
           network={network}
           seedInput={seedInput}
           session={session}
+          musicEnabled={audio.musicEnabled}
+          sfxEnabled={audio.sfxEnabled}
+          onMusicEnabledChange={audio.setMusicEnabled}
           onRestart={onRestart}
           onSeedInputChange={onSeedInputChange}
+          onSfxEnabledChange={audio.setSfxEnabled}
         />
         {pendingLabel ? (
           <section aria-label="Pending action" className="pending-panel">
@@ -513,6 +519,7 @@ function GameConsole({
               currentText={currentText!}
               latestLog={latestLog}
               onChooseStat={onChooseStat}
+              onChoiceClick={audio.playChoiceClick}
             />
           ) : null}
 
@@ -584,20 +591,28 @@ function OptionsPanel({
   bundle,
   busy,
   logs,
+  musicEnabled,
   network,
   seedInput,
   session,
+  sfxEnabled,
+  onMusicEnabledChange,
   onRestart,
   onSeedInputChange,
+  onSfxEnabledChange,
 }: {
   bundle: RunBundle;
   busy: boolean;
   logs: ChoiceLogView[];
+  musicEnabled: boolean;
   network: GravenholdNetwork;
   seedInput: string;
   session: GameSession;
+  sfxEnabled: boolean;
+  onMusicEnabledChange: (enabled: boolean) => void;
   onRestart: () => void;
   onSeedInputChange: (value: string) => void;
+  onSfxEnabledChange: (enabled: boolean) => void;
 }) {
   return (
     <Popover.Root>
@@ -619,6 +634,25 @@ function OptionsPanel({
             <p>
               {session.label}: {shortAddress(session.address)}
             </p>
+
+            <div className="audio-options">
+              <label>
+                <input
+                  checked={musicEnabled}
+                  onChange={(event) => onMusicEnabledChange(event.target.checked)}
+                  type="checkbox"
+                />
+                Music
+              </label>
+              <label>
+                <input
+                  checked={sfxEnabled}
+                  onChange={(event) => onSfxEnabledChange(event.target.checked)}
+                  type="checkbox"
+                />
+                Sound effects
+              </label>
+            </div>
 
             {network.profile === "dev" || network.accountMode === "local" ? (
               <form
@@ -753,12 +787,14 @@ function EncounterPanel({
   busy,
   currentText,
   latestLog,
+  onChoiceClick,
   onChooseStat,
 }: {
   bundle: RunBundle;
   busy: boolean;
   currentText: ReturnType<typeof getEncounterText>;
   latestLog: ChoiceLogView | null;
+  onChoiceClick: () => void;
   onChooseStat: (stat: StatId) => void;
 }) {
   const current = bundle.currentEncounter!;
@@ -792,6 +828,7 @@ function EncounterPanel({
             secondaryStat={getChoiceSecondaryStat(bundle, bundle.forecasts![stat])}
             stat={stat}
             text={currentText.options[stat]}
+            onChoiceClick={onChoiceClick}
             onChoose={onChooseStat}
           />
         ))}
@@ -851,6 +888,7 @@ function ChoiceButton({
   secondaryStat,
   stat,
   text,
+  onChoiceClick,
   onChoose,
 }: {
   busy: boolean;
@@ -858,6 +896,7 @@ function ChoiceButton({
   secondaryStat: StatId | null;
   stat: StatId;
   text: { description: string; label: string };
+  onChoiceClick: () => void;
   onChoose: (stat: StatId) => void;
 }) {
   const style = secondaryStat
@@ -917,7 +956,14 @@ function ChoiceButton({
           </dd>
         </div>
       </dl>
-      <button disabled={busy} onClick={() => onChoose(stat)} type="button">
+      <button
+        disabled={busy}
+        onClick={() => {
+          onChoiceClick();
+          onChoose(stat);
+        }}
+        type="button"
+      >
         Choose {statLabels[stat]}
       </button>
     </article>

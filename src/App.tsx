@@ -397,6 +397,36 @@ function BootLoaderPanel({ network }: { network: GravenholdNetwork | null }) {
   );
 }
 
+function IntroMeta({
+  network,
+  seedInput,
+  showLocalSeed,
+  onSeedInputChange,
+}: {
+  network: GravenholdNetwork | null;
+  seedInput: string;
+  showLocalSeed: boolean;
+  onSeedInputChange: (value: string) => void;
+}) {
+  return (
+    <details className="intro-meta">
+      <summary>{network ? formatNetworkBadge(network) : "Network unavailable"}</summary>
+      <div className="intro-meta-panel">
+        <p>{network ? network.chainId : "No chain configured"}</p>
+        {showLocalSeed ? (
+          <label>
+            Seed
+            <input
+              value={seedInput}
+              onChange={(event) => onSeedInputChange(event.target.value)}
+            />
+          </label>
+        ) : null}
+      </div>
+    </details>
+  );
+}
+
 function StartPanel({
   busy,
   connectingSession,
@@ -418,12 +448,15 @@ function StartPanel({
 }) {
   return (
     <section aria-label="Start run" className="start-screen">
-      <p className="network-line">
-        {network ? formatNetworkBadge(network) : "Network unavailable"}
-      </p>
+      <IntroMeta
+        network={network}
+        seedInput={seedInput}
+        showLocalSeed={showLocalSeed}
+        onSeedInputChange={onSeedInputChange}
+      />
       <h1>{storyText.title}</h1>
-      <p>{storyText.subtitle}</p>
-      <p>{storyText.intro}</p>
+      <p className="intro-subtitle">{storyText.subtitle}</p>
+      <p className="intro-copy">{storyText.intro}</p>
 
       <form
         onSubmit={(event) => {
@@ -431,15 +464,6 @@ function StartPanel({
           onStartRun();
         }}
       >
-        {showLocalSeed ? (
-          <label>
-            Seed{" "}
-            <input
-              value={seedInput}
-              onChange={(event) => onSeedInputChange(event.target.value)}
-            />
-          </label>
-        ) : null}
         <button disabled={busy || connectingSession || !network} type="submit">
           {connectingSession ? "Connecting..." : busy ? "Starting..." : "Start"}
         </button>

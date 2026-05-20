@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 
+import { SceneEffectsLayer } from "@/components/fx/SceneEffectsLayer";
 import { HowItWorksDialog } from "@/components/onboarding/HowItWorksDialog";
 import {
   createGameSession,
@@ -388,6 +389,7 @@ export default function Home() {
 function BootLoaderPanel({ network }: { network: GravenholdNetwork | null }) {
   return (
     <section aria-label="Loading active run" className="start-screen">
+      <SceneEffectsLayer profile="intro" />
       <p className="network-line">
         {network ? formatNetworkBadge(network) : "Network unavailable"}
       </p>
@@ -448,6 +450,7 @@ function StartPanel({
 }) {
   return (
     <section aria-label="Start run" className="start-screen">
+      <SceneEffectsLayer profile="intro" />
       <IntroMeta
         network={network}
         seedInput={seedInput}
@@ -873,6 +876,10 @@ function LatestResultBadge({ log }: { log: ChoiceLogView }) {
   );
 }
 
+function choiceLogKey(log: ChoiceLogView) {
+  return `${log.runId}-${log.index}`;
+}
+
 function EncounterPanel({
   bundle,
   busy,
@@ -890,6 +897,7 @@ function EncounterPanel({
 }) {
   const current = bundle.currentEncounter!;
   const background = encounterBackgroundFor(current.encounterId);
+  const sceneProfile = current.difficultyKind === "boss" ? "boss" : "encounter";
 
   return (
     <section aria-label="Encounter" className="encounter-panel">
@@ -897,7 +905,10 @@ function EncounterPanel({
         className="encounter-art"
         style={{ backgroundImage: `url(${background})` }}
       >
-        {latestLog ? <LatestResultBadge log={latestLog} /> : null}
+        <SceneEffectsLayer profile={sceneProfile} />
+        {latestLog ? (
+          <LatestResultBadge key={choiceLogKey(latestLog)} log={latestLog} />
+        ) : null}
         <EncounterDetailsPopover
           baseDifficulty={current.baseDifficulty}
           category={encounterCategoryLabels[current.category]}
@@ -1092,12 +1103,15 @@ function RewardPanel({
         className="reward-art"
         style={{ backgroundImage: `url(${levelClearedBackground})` }}
       >
+        <SceneEffectsLayer profile="reward" />
         <div className="reward-copy">
           <div>
             <h2>{storyText.levelClearedTitle}</h2>
             <p>{storyText.levelClearedDescription}</p>
           </div>
-          {latestLog ? <LatestResultBadge log={latestLog} /> : null}
+          {latestLog ? (
+            <LatestResultBadge key={choiceLogKey(latestLog)} log={latestLog} />
+          ) : null}
         </div>
       </div>
       <div className="reward-grid">
@@ -1117,6 +1131,7 @@ function RewardPanel({
                 statClass(getItemPrimaryStat(item)),
               ].join(" ")}
               key={reward.index}
+              style={{ "--reward-index": reward.index } as CSSProperties}
             >
               <ItemIcon itemId={reward.itemId} />
               <h3>{text.name}</h3>
@@ -1159,6 +1174,7 @@ function CompletePanel({
 }) {
   const won = bundle.run.status === "won";
   const background = won ? levelClearedBackground : gameOverBackground;
+  const sceneProfile = won ? "victory" : "defeat";
 
   return (
     <section aria-label="Complete" className="complete-panel">
@@ -1166,6 +1182,7 @@ function CompletePanel({
         className="complete-art"
         style={{ backgroundImage: `url(${background})` }}
       >
+        <SceneEffectsLayer profile={sceneProfile} />
         <div className="complete-copy">
           <div>
             <h2>{won ? storyText.victoryTitle : storyText.defeatTitle}</h2>
@@ -1173,7 +1190,9 @@ function CompletePanel({
               {won ? storyText.victoryDescription : storyText.defeatDescription}
             </p>
           </div>
-          {latestLog ? <LatestResultBadge log={latestLog} /> : null}
+          {latestLog ? (
+            <LatestResultBadge key={choiceLogKey(latestLog)} log={latestLog} />
+          ) : null}
         </div>
       </div>
       <button disabled={busy} onClick={onRestart} type="button">

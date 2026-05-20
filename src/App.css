@@ -144,9 +144,13 @@ img {
   text-align: center;
 }
 
-.start-screen > * {
+.start-screen > :not(.scene-fx) {
   position: relative;
   z-index: 1;
+}
+
+.start-screen > .scene-fx {
+  z-index: 0;
 }
 
 .start-screen h1 {
@@ -262,6 +266,302 @@ img {
 
 .intro-meta-panel input {
   width: 100%;
+}
+
+.scene-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scene-fx-intro {
+  position: fixed;
+}
+
+.scene-fx-glow,
+.scene-fx-fog,
+.scene-fx-particle {
+  position: absolute;
+  display: block;
+}
+
+.scene-fx-glow {
+  top: 32%;
+  width: 18%;
+  height: 42%;
+  background: linear-gradient(90deg, rgba(210, 105, 34, 0.22), rgba(210, 105, 34, 0));
+  filter: blur(18px);
+  opacity: 0.58;
+  animation: torch-flicker 2.8s steps(6, end) infinite;
+}
+
+.scene-fx-glow-left {
+  left: -3%;
+}
+
+.scene-fx-glow-right {
+  right: -3%;
+  transform: scaleX(-1);
+  animation-delay: 430ms;
+}
+
+.scene-fx-fog {
+  left: -12%;
+  width: 124%;
+  height: 18%;
+  background: linear-gradient(90deg, transparent, rgba(198, 171, 128, 0.09), transparent);
+  opacity: 0.5;
+  transform: skewY(-2deg);
+  animation: fog-drift 14s linear infinite;
+}
+
+.scene-fx-fog-a {
+  top: 24%;
+}
+
+.scene-fx-fog-b {
+  top: 58%;
+  opacity: 0.34;
+  animation-duration: 19s;
+  animation-direction: reverse;
+}
+
+.scene-fx-particle {
+  width: 5px;
+  height: 5px;
+  background: #d5a84e;
+  opacity: 0;
+  box-shadow:
+    0 0 0 1px rgba(60, 32, 17, 0.45),
+    0 0 10px rgba(213, 168, 78, 0.5);
+  animation: particle-rise 6.4s linear infinite;
+}
+
+.scene-fx-particle-1 {
+  left: 16%;
+  top: 82%;
+  animation-delay: 0ms;
+}
+
+.scene-fx-particle-2 {
+  left: 24%;
+  top: 68%;
+  animation-delay: 950ms;
+  transform: scale(0.75);
+}
+
+.scene-fx-particle-3 {
+  left: 38%;
+  top: 76%;
+  animation-delay: 1850ms;
+  transform: scale(1.25);
+}
+
+.scene-fx-particle-4 {
+  left: 51%;
+  top: 64%;
+  animation-delay: 2750ms;
+}
+
+.scene-fx-particle-5 {
+  left: 63%;
+  top: 78%;
+  animation-delay: 3600ms;
+  transform: scale(0.8);
+}
+
+.scene-fx-particle-6 {
+  left: 78%;
+  top: 70%;
+  animation-delay: 4450ms;
+}
+
+.scene-fx-particle-7 {
+  left: 84%;
+  top: 84%;
+  animation-delay: 5350ms;
+  transform: scale(1.18);
+}
+
+.scene-fx-particle-8 {
+  left: 11%;
+  top: 56%;
+  animation-delay: 6200ms;
+}
+
+.scene-fx-encounter .scene-fx-fog {
+  opacity: 0.36;
+}
+
+.scene-fx-boss .scene-fx-glow {
+  background: linear-gradient(90deg, rgba(180, 57, 39, 0.28), rgba(180, 57, 39, 0));
+  opacity: 0.66;
+  animation-duration: 2.2s;
+}
+
+.scene-fx-boss .scene-fx-particle {
+  background: #c4614d;
+  box-shadow:
+    0 0 0 1px rgba(67, 24, 18, 0.5),
+    0 0 12px rgba(196, 97, 77, 0.55);
+}
+
+.scene-fx-reward .scene-fx-glow,
+.scene-fx-victory .scene-fx-glow {
+  background: linear-gradient(90deg, rgba(226, 181, 91, 0.28), rgba(226, 181, 91, 0));
+}
+
+.scene-fx-reward .scene-fx-particle,
+.scene-fx-victory .scene-fx-particle {
+  background: #f0d78a;
+  box-shadow:
+    0 0 0 1px rgba(71, 45, 16, 0.45),
+    0 0 12px rgba(240, 215, 138, 0.62);
+}
+
+.scene-fx-defeat .scene-fx-glow {
+  background: linear-gradient(90deg, rgba(106, 38, 30, 0.26), rgba(106, 38, 30, 0));
+  opacity: 0.42;
+  animation-duration: 4.8s;
+}
+
+.scene-fx-defeat .scene-fx-fog {
+  opacity: 0.62;
+  animation-duration: 23s;
+}
+
+.scene-fx-defeat .scene-fx-particle {
+  background: #8a5b48;
+  animation-duration: 10s;
+  box-shadow:
+    0 0 0 1px rgba(42, 22, 18, 0.5),
+    0 0 8px rgba(138, 91, 72, 0.42);
+}
+
+@keyframes torch-flicker {
+  0%,
+  100% {
+    opacity: 0.48;
+  }
+
+  22% {
+    opacity: 0.68;
+  }
+
+  41% {
+    opacity: 0.42;
+  }
+
+  63% {
+    opacity: 0.74;
+  }
+
+  82% {
+    opacity: 0.52;
+  }
+}
+
+@keyframes fog-drift {
+  from {
+    transform: translateX(-4%) skewY(-2deg);
+  }
+
+  to {
+    transform: translateX(4%) skewY(-2deg);
+  }
+}
+
+@keyframes particle-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+
+  15% {
+    opacity: 0.62;
+  }
+
+  70% {
+    opacity: 0.44;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(10px, -72px, 0);
+  }
+}
+
+@keyframes result-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes result-success-pulse {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+
+  38% {
+    box-shadow:
+      inset 0 0 0 2px rgba(240, 215, 138, 0.24),
+      0 0 18px rgba(213, 168, 78, 0.24);
+  }
+}
+
+@keyframes result-fail-pulse {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+
+  38% {
+    box-shadow:
+      inset 0 0 0 2px rgba(196, 97, 77, 0.24),
+      0 0 18px rgba(164, 54, 42, 0.24);
+  }
+}
+
+@keyframes reward-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-fx-glow,
+  .scene-fx-fog,
+  .scene-fx-particle,
+  .latest-result,
+  .result-success,
+  .result-fail,
+  .reward-card {
+    animation: none;
+  }
+
+  .scene-fx-fog,
+  .scene-fx-particle {
+    opacity: 0.2;
+  }
+
+  .scene-fx-glow {
+    opacity: 0.32;
+  }
 }
 
 .game-shell {
@@ -631,6 +931,7 @@ img {
 .encounter-art::after {
   position: absolute;
   inset: 0;
+  z-index: 2;
   content: "";
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(13, 9, 8, 0.56));
   pointer-events: none;
@@ -638,7 +939,7 @@ img {
 
 .encounter-copy {
   position: absolute;
-  z-index: 1;
+  z-index: 3;
   left: 18px;
   right: 18px;
   bottom: 14px;
@@ -789,6 +1090,14 @@ img {
   align-self: end;
   width: 100%;
   min-height: 32px;
+  transition:
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.choice-card button:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 0 rgba(68, 36, 20, 0.5);
 }
 
 .reward-panel,
@@ -816,6 +1125,7 @@ img {
 .complete-art::after {
   position: absolute;
   inset: 0;
+  z-index: 2;
   content: "";
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(13, 9, 8, 0.56));
   pointer-events: none;
@@ -824,7 +1134,7 @@ img {
 .reward-copy,
 .complete-copy {
   position: absolute;
-  z-index: 1;
+  z-index: 3;
   left: 18px;
   right: 18px;
   bottom: 14px;
@@ -875,12 +1185,23 @@ img {
   background:
     linear-gradient(rgba(20, 14, 11, 0.78), rgba(13, 9, 8, 0.9)),
     url("/assets/game/ui/bg-dark.png") center / 120px;
+  animation: reward-card-enter 240ms ease-out both;
+  animation-delay: calc(var(--reward-index, 0) * 70ms);
 }
 
 .reward-card .item-icon {
   width: 60px;
   height: 60px;
   object-fit: contain;
+  transition:
+    filter 160ms ease,
+    transform 160ms ease;
+}
+
+.reward-card:hover .item-icon,
+.reward-card:focus-within .item-icon {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
 }
 
 .button-row {
@@ -1025,12 +1346,25 @@ img {
 }
 
 .latest-result {
-  z-index: 2;
+  z-index: 4;
   min-width: 152px;
   padding: 6px 8px;
   border: 2px solid var(--stat-color);
   color: #f3dfb5;
   background: rgba(15, 10, 8, 0.86);
+  animation: result-enter 180ms ease-out both;
+}
+
+.result-success {
+  animation:
+    result-enter 180ms ease-out both,
+    result-success-pulse 760ms ease-out 120ms;
+}
+
+.result-fail {
+  animation:
+    result-enter 180ms ease-out both,
+    result-fail-pulse 760ms ease-out 120ms;
 }
 
 .latest-result b {
@@ -1049,7 +1383,7 @@ img {
 
 .encounter-details-trigger {
   position: absolute;
-  z-index: 3;
+  z-index: 4;
   top: 10px;
   left: 10px;
   min-height: 30px;

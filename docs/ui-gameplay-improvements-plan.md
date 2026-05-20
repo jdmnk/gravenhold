@@ -1,59 +1,110 @@
-# Gravenhold UI Gameplay Improvements Plan
+# Gravenhold Game Feel Improvements Plan
 
-This plan keeps Cairo/Dojo gameplay as the source of truth. React should only present decoded chain state, forecasts, rewards, equipment, and history more clearly.
+This plan replaces the completed tactical-readability UI plan. Cairo/Dojo remains the gameplay source of truth; these changes are presentation-only and must not change deterministic rules, forecasts, rewards, or equipment behavior.
 
 ## Goals
 
-- Make each encounter easier to read before the player chooses.
-- Make deterministic checks feel tactical and satisfying.
-- Reinforce build identity and specialization without adding new gameplay rules.
-- Keep the main scene layout managed by shared components instead of one-off overlay positioning.
+- Make Gravenhold feel more alive while preserving its direct RPG interface.
+- Give intro, encounter, level-cleared, victory, and defeat screens distinct atmosphere.
+- Make player actions feel tactile through restrained motion, feedback, and timing.
+- Keep effects reusable, cheap, and respectful of `prefers-reduced-motion`.
+- Avoid one-off decorative code scattered through `App.tsx`.
 
-## Execution Plan
+## Direction
 
-1. Encounter dossier
-   - Add a compact encounter props row inside the shared scene stage.
-   - Show encounter type, difficulty, and base check.
-   - Show boss support requirements when the current encounter is a boss.
+The visual target is a dark dungeon RPG screen that breathes: torch flicker, drifting dust, small ember movement, subtle panel reveals, and clear result feedback. Effects should support game state and atmosphere, not become a flashy layer over the rules.
 
-2. Hover preview math
-   - Expand the tactical hover preview with effective stat, final difficulty, and pass margin.
-   - Show `Pass +N` or `Short N` so the player does not need mental subtraction.
-   - Keep approach, payoff, and danger readable in the same preview component.
+## Screen Coverage
 
-3. Encounter identity badges
-   - Give category and difficulty clear badge treatment.
-   - Use restrained medieval/fantasy UI language, not decorative clutter.
-   - Keep badges text-first and deterministic-data-driven.
+1. Intro screen
+   - Add ambient dust and low torch-like glow over the full-screen background.
+   - Keep the start actions readable and central.
+   - Keep network/seed metadata secondary and out of the main composition.
 
-4. Build direction readout
-   - Add a small build identity readout using existing stats, equipment bonuses, and recent choices.
-   - Show dominant stat and whether the build is focused or drifting.
+2. Encounter screen
+   - Add a reusable effects layer over encounter art.
+   - Normal encounters use dust, dim fog, and soft torch movement.
+   - Boss encounters can later use heavier pulse, ash, or pressure effects.
 
-5. Reward comparison
-   - On reward cards, compare the offered item against the currently equipped item in the same slot.
-   - Show stat deltas and whether it is an upgrade, sidegrade, or off-build.
+3. Level cleared screen
+   - Add calmer reward-focused effects: faint motes, brief item-card reveal, and a small shine on reward icons.
+   - Make reward card entrance feel like loot being presented.
 
-6. Boss gate preview
-   - Make boss support and failure risk more prominent before and during boss encounters.
-   - Surface support stat value, required support, difficulty penalty, and damage penalty from forecast data.
+4. End screens
+   - Victory should feel warmer and steadier than a normal level clear.
+   - Defeat should feel heavier and lower energy without hiding the restart action.
+   - Both should use the same large-image alignment as the main screen.
 
-7. Run progress strip
-   - Add a compact 20-level path strip with boss levels marked.
-   - Highlight current level and completed levels.
-   - Avoid adding a procedural map or changing progression rules.
+5. Core game UI
+   - Keep top bar, stats, progression, and gear mostly stable.
+   - Add motion only where it clarifies state: current level, boss markers, health loss, stat gain, pending action.
 
-8. Result breakdown
-   - Let the scene event dock briefly explain resolved checks.
-   - Show stat vs difficulty, success/failure, stat gain, health loss, level clear, and reward unlock.
+## Reusable Pieces
+
+1. `SceneEffectsLayer`
+   - Shared overlay component for intro, encounter art, reward art, and complete art.
+   - Profiles: `intro`, `encounter`, `boss`, `reward`, `victory`, `defeat`.
+   - CSS-only first. No canvas until there is a clear need.
+
+2. Motion CSS
+   - Centralize keyframes and reduced-motion overrides in `App.css` initially.
+   - If the CSS grows large, split it later into a dedicated stylesheet.
+
+3. Result feedback
+   - Animate `LatestResultBadge` in.
+   - Success gets a restrained gold pulse.
+   - Failure gets a short red hit pulse.
+
+4. Reward reveal
+   - Stagger reward cards with CSS custom properties.
+   - Add icon shine/flicker on hover only.
+
+## Implementation Phases
+
+### Phase 1: Ambient Life
+
+- Add `SceneEffectsLayer`.
+- Apply it to:
+  - intro screen
+  - encounter art
+  - level cleared art
+  - victory screen
+  - defeat screen
+- Add reduced-motion fallback.
+- Keep all effects CSS-only and asset-free.
+
+### Phase 2: Action Feedback
+
+- Add click/commit animation to choice cards.
+- Animate latest result badge on new results.
+- Add health bar pulse on damage and stat/readout pulse on gain.
+- Make pending actions feel like resolving, not disabled.
+
+### Phase 3: Reward And Gear Feel
+
+- Stagger reward cards on level cleared.
+- Add subtle item icon shine on reward hover.
+- Pulse equipped slots when gear changes.
+- Keep reward cards neutral enough to avoid noisy stat-color overload.
+
+### Phase 4: Progression Presence
+
+- Pulse current level marker lightly.
+- Give boss markers a faint ember treatment.
+- Briefly animate newly cleared levels.
+- Add stronger next-boss anticipation when the next level is a boss.
+
+### Phase 5: Boss And End-Screen Identity
+
+- Add boss-specific effect profile.
+- Add victory and defeat profile refinements.
+- Consider small generated overlay sprites only if CSS effects are not enough.
 
 ## Current Execution Status
 
-- [x] 1. Encounter dossier
-- [x] 2. Hover preview math
-- [x] 3. Encounter identity badges
-- [x] 4. Build direction readout
-- [x] 5. Reward comparison
-- [x] 6. Boss gate preview
-- [x] 7. Run progress strip
-- [x] 8. Result breakdown
+- [x] Replaced outdated completed tactical-readability plan.
+- [x] Phase 1: Ambient Life.
+- [ ] Phase 2: Action Feedback. Started with choice press states and latest-result pulses.
+- [ ] Phase 3: Reward And Gear Feel. Started with reward-card reveal and icon hover motion.
+- [ ] Phase 4: Progression Presence.
+- [ ] Phase 5: Boss And End-Screen Identity.

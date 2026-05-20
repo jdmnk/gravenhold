@@ -1,7 +1,6 @@
 export type SceneEffectProfile =
   | "boss"
   | "defeat"
-  | "encounter"
   | "intro"
   | "reward"
   | "victory";

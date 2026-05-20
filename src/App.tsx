@@ -577,11 +577,6 @@ function GameConsole({
           onShowIntroScreen={onShowIntroScreen}
           onSfxEnabledChange={audio.setSfxEnabled}
         />
-        {pendingLabel ? (
-          <section aria-label="Pending action" className="pending-panel">
-            <p>{pendingLabel}</p>
-          </section>
-        ) : null}
       </header>
 
       <section aria-label="Main game layout" className="game-layout">
@@ -596,6 +591,7 @@ function GameConsole({
               busy={busy}
               currentText={currentText!}
               latestLog={latestLog}
+              pendingLabel={pendingLabel}
               onChooseStat={onChooseStat}
               onChoiceClick={audio.playChoiceClick}
             />
@@ -607,6 +603,7 @@ function GameConsole({
               busy={busy}
               latestLog={latestLog}
               pendingAction={pendingAction}
+              pendingLabel={pendingLabel}
               onReward={onReward}
             />
           ) : null}
@@ -616,6 +613,7 @@ function GameConsole({
               bundle={bundle}
               busy={busy}
               latestLog={latestLog}
+              pendingLabel={pendingLabel}
               onRestart={onRestart}
             />
           ) : null}
@@ -886,6 +884,7 @@ function EncounterPanel({
   busy,
   currentText,
   latestLog,
+  pendingLabel,
   onChoiceClick,
   onChooseStat,
 }: {
@@ -893,12 +892,13 @@ function EncounterPanel({
   busy: boolean;
   currentText: ReturnType<typeof getEncounterText>;
   latestLog: ChoiceLogView | null;
+  pendingLabel: string | null;
   onChoiceClick: () => void;
   onChooseStat: (stat: StatId) => void;
 }) {
   const current = bundle.currentEncounter!;
   const background = encounterBackgroundFor(current.encounterId);
-  const sceneProfile = current.difficultyKind === "boss" ? "boss" : "encounter";
+  const isBoss = current.difficultyKind === "boss";
 
   return (
     <section aria-label="Encounter" className="encounter-panel">
@@ -906,7 +906,7 @@ function EncounterPanel({
         className="encounter-art"
         style={{ backgroundImage: `url(${background})` }}
       >
-        <SceneEffectsLayer profile={sceneProfile} />
+        {isBoss ? <SceneEffectsLayer profile="boss" /> : null}
         {latestLog ? (
           <LatestResultBadge key={choiceLogKey(latestLog)} log={latestLog} />
         ) : null}
@@ -915,7 +915,8 @@ function EncounterPanel({
           category={encounterCategoryLabels[current.category]}
           difficulty={encounterDifficultyLabels[current.difficultyKind]}
         />
-        <div className="encounter-copy">
+        {pendingLabel ? <ScenePendingOverlay label={pendingLabel} /> : null}
+        <div className="scene-copy encounter-copy">
           <h2>{currentText.title}</h2>
           <p>{currentText.description}</p>
         </div>
@@ -936,6 +937,14 @@ function EncounterPanel({
           />
         ))}
       </section>
+    </section>
+  );
+}
+
+function ScenePendingOverlay({ label }: { label: string }) {
+  return (
+    <section aria-label="Pending action" className="pending-panel">
+      <p>{label}</p>
     </section>
   );
 }
@@ -1090,12 +1099,14 @@ function RewardPanel({
   busy,
   latestLog,
   pendingAction,
+  pendingLabel,
   onReward,
 }: {
   bundle: RunBundle;
   busy: boolean;
   latestLog: ChoiceLogView | null;
   pendingAction: PendingAction | null;
+  pendingLabel: string | null;
   onReward: (reward: RewardOfferView, equipNow: boolean) => void;
 }) {
   return (
@@ -1105,15 +1116,14 @@ function RewardPanel({
         style={{ backgroundImage: `url(${levelClearedBackground})` }}
       >
         <SceneEffectsLayer profile="reward" />
-        <div className="reward-copy">
-          <div>
-            <h2>{storyText.levelClearedTitle}</h2>
-            <p>{storyText.levelClearedDescription}</p>
-          </div>
-          {latestLog ? (
-            <LatestResultBadge key={choiceLogKey(latestLog)} log={latestLog} />
-          ) : null}
+        {pendingLabel ? <ScenePendingOverlay label={pendingLabel} /> : null}
+        <div className="scene-copy reward-copy">
+          <h2>{storyText.levelClearedTitle}</h2>
+          <p>{storyText.levelClearedDescription}</p>
         </div>
+        {latestLog ? (
+          <LatestResultBadge key={choiceLogKey(latestLog)} log={latestLog} />
+        ) : null}
       </div>
       <div className="reward-grid">
         {bundle.rewards.map((reward) => {
@@ -1166,11 +1176,13 @@ function CompletePanel({
   bundle,
   busy,
   latestLog,
+  pendingLabel,
   onRestart,
 }: {
   bundle: RunBundle;
   busy: boolean;
   latestLog: ChoiceLogView | null;
+  pendingLabel: string | null;
   onRestart: () => void;
 }) {
   const won = bundle.run.status === "won";
@@ -1184,17 +1196,16 @@ function CompletePanel({
         style={{ backgroundImage: `url(${background})` }}
       >
         <SceneEffectsLayer profile={sceneProfile} />
-        <div className="complete-copy">
-          <div>
-            <h2>{won ? storyText.victoryTitle : storyText.defeatTitle}</h2>
-            <p>
-              {won ? storyText.victoryDescription : storyText.defeatDescription}
-            </p>
-          </div>
-          {latestLog ? (
-            <LatestResultBadge key={choiceLogKey(latestLog)} log={latestLog} />
-          ) : null}
+        {pendingLabel ? <ScenePendingOverlay label={pendingLabel} /> : null}
+        <div className="scene-copy complete-copy">
+          <h2>{won ? storyText.victoryTitle : storyText.defeatTitle}</h2>
+          <p>
+            {won ? storyText.victoryDescription : storyText.defeatDescription}
+          </p>
         </div>
+        {latestLog ? (
+          <LatestResultBadge key={choiceLogKey(latestLog)} log={latestLog} />
+        ) : null}
       </div>
       <button disabled={busy} onClick={onRestart} type="button">
         Restart

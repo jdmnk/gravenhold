@@ -401,10 +401,6 @@ img {
   animation-delay: 6200ms;
 }
 
-.scene-fx-encounter .scene-fx-fog {
-  opacity: 0.36;
-}
-
 .scene-fx-boss .scene-fx-glow {
   background: linear-gradient(90deg, rgba(180, 57, 39, 0.28), rgba(180, 57, 39, 0));
   opacity: 0.66;
@@ -975,7 +971,9 @@ img {
   grid-template-rows: minmax(0, 1fr) auto;
 }
 
-.encounter-art {
+.encounter-art,
+.reward-art,
+.complete-art {
   position: relative;
   height: 100%;
   min-height: clamp(276px, 41vh, 504px);
@@ -987,34 +985,39 @@ img {
   overflow: hidden;
 }
 
-.encounter-art::after {
+.encounter-art::after,
+.reward-art::after,
+.complete-art::after {
   position: absolute;
   inset: 0;
   z-index: 2;
   content: "";
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(13, 9, 8, 0.56));
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(13, 9, 8, 0.08) 42%, rgba(13, 9, 8, 0.55)),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.06) 54%);
   pointer-events: none;
 }
 
-.encounter-copy {
+.scene-copy {
   position: absolute;
   z-index: 3;
+  top: 16px;
   left: 18px;
-  right: 18px;
-  bottom: 14px;
   display: grid;
   gap: 8px;
-  max-width: 740px;
+  width: min(740px, calc(100% - 36px));
+  text-align: left;
 }
 
-.encounter-copy h2 {
+.scene-copy h2 {
   font-size: clamp(36px, 4.6vw, 66px);
   line-height: 0.9;
   color: #ffd37a;
   text-shadow: 0 4px 0 #1b0d08;
 }
 
-.encounter-copy p {
+.scene-copy p {
+  max-width: 760px;
   color: #f1d9af;
   font-size: 21px;
   text-shadow: 0 2px 0 #1b0d08;
@@ -1165,55 +1168,6 @@ img {
   grid-template-rows: minmax(0, 1fr) auto;
   align-content: normal;
   gap: 8px;
-}
-
-.reward-art,
-.complete-art {
-  position: relative;
-  height: 100%;
-  min-height: clamp(276px, 41vh, 504px);
-  border: 3px solid #2d2119;
-  background-color: #17120f;
-  background-position: center;
-  background-size: cover;
-  image-rendering: pixelated;
-  overflow: hidden;
-}
-
-.reward-art::after,
-.complete-art::after {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  content: "";
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(13, 9, 8, 0.56));
-  pointer-events: none;
-}
-
-.reward-copy,
-.complete-copy {
-  position: absolute;
-  z-index: 3;
-  left: 18px;
-  right: 18px;
-  bottom: 14px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: end;
-}
-
-.reward-copy h2,
-.complete-copy h2 {
-  color: #ffd37a;
-  text-shadow: 0 3px 0 #1b0d08;
-}
-
-.reward-copy p,
-.complete-copy p {
-  max-width: 760px;
-  color: #f1d9af;
-  text-shadow: 0 2px 0 #1b0d08;
 }
 
 .panel-heading {
@@ -1434,16 +1388,18 @@ img {
   color: #d6b895;
 }
 
-.encounter-art .latest-result {
+.encounter-art .latest-result,
+.reward-art .latest-result,
+.complete-art .latest-result {
   position: absolute;
-  top: 10px;
   right: 10px;
+  bottom: 10px;
 }
 
 .encounter-details-trigger {
   position: absolute;
   z-index: 4;
-  top: 10px;
+  bottom: 10px;
   left: 10px;
   min-height: 30px;
   padding: 3px 9px;
@@ -1660,7 +1616,7 @@ img {
     min-height: clamp(186px, 30vh, 264px);
   }
 
-  .encounter-copy h2 {
+  .scene-copy h2 {
     font-size: clamp(32px, 4.2vw, 52px);
   }
 
@@ -1820,10 +1776,10 @@ img {
     min-height: 180px;
   }
 
-  .encounter-copy {
+  .scene-copy {
     left: 12px;
-    right: 12px;
-    bottom: 12px;
+    top: 12px;
+    width: min(740px, calc(100% - 24px));
   }
 
   .progression-panel ol {

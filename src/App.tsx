@@ -457,11 +457,12 @@ function StartPanel({
         showLocalSeed={showLocalSeed}
         onSeedInputChange={onSeedInputChange}
       />
-      <h1>{storyText.title}</h1>
+      <h1 className="intro-title">{storyText.title}</h1>
       <p className="intro-subtitle">{storyText.subtitle}</p>
       <p className="intro-copy">{storyText.intro}</p>
 
       <form
+        className="intro-actions"
         onSubmit={(event) => {
           event.preventDefault();
           onStartRun();

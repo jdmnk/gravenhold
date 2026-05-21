@@ -25,7 +25,7 @@ export const slotLabels: Record<EquipmentSlot, string> = {
 };
 
 export type RunStatus = "not_started" | "playing" | "reward" | "won" | "lost";
-export type GamePhase = "encounter" | "reward" | "complete";
+export type GamePhase = "encounter" | "reward" | "stat_allocate" | "complete";
 export type EncounterSource = "fixed" | "random" | "boss";
 export type EncounterCategory = "obstacle" | "enemy" | "social" | "mystery" | "survival" | "boss";
 export type EncounterDifficulty = "normal" | "hard" | "boss";
@@ -40,6 +40,7 @@ export type RunView = {
   nonce: number;
   status: RunStatus;
   phase: GamePhase;
+  pendingPhase: GamePhase;
   level: number;
   encounterIndex: number;
   choiceCount: number;
@@ -52,6 +53,9 @@ export type CharacterView = {
   runId: bigint;
   health: number;
   maxHealth: number;
+  xpLevel: number;
+  xp: number;
+  unspentStatPoints: number;
   baseStats: Record<StatId, number>;
   strain: Record<StatId, number>;
   equipment: Record<EquipmentSlot, number>;
@@ -110,6 +114,9 @@ export type ChoiceLogView = {
   healthDeltaSign: DeltaSign;
   healthDeltaAmount: number;
   statGain: number;
+  xpGain: number;
+  xpLevelAfter: number;
+  leveledUp: boolean;
   bossEncounter: boolean;
   bossDefeated: boolean;
   completedLevel: boolean;
@@ -164,6 +171,7 @@ const phaseMap: Record<number, GamePhase> = {
   0: "encounter",
   1: "reward",
   2: "complete",
+  3: "stat_allocate",
 };
 
 const sourceMap: Record<number, EncounterSource> = {
@@ -257,12 +265,13 @@ export function decodeRun(felts: string[]): RunView {
     nonce: num(felts, 3),
     status: enumValue(statusMap, num(felts, 4), "run status"),
     phase: enumValue(phaseMap, num(felts, 5), "phase"),
-    level: num(felts, 6),
-    encounterIndex: num(felts, 7),
-    choiceCount: num(felts, 8),
-    rewardCount: num(felts, 9),
-    startedAt: felt(felts, 10),
-    endedAt: felt(felts, 11),
+    pendingPhase: enumValue(phaseMap, num(felts, 6), "pending phase"),
+    level: num(felts, 7),
+    encounterIndex: num(felts, 8),
+    choiceCount: num(felts, 9),
+    rewardCount: num(felts, 10),
+    startedAt: felt(felts, 11),
+    endedAt: felt(felts, 12),
   };
 }
 
@@ -271,24 +280,27 @@ export function decodeCharacter(felts: string[]): CharacterView {
     runId: felt(felts, 0),
     health: num(felts, 1),
     maxHealth: num(felts, 2),
+    xpLevel: num(felts, 3),
+    xp: num(felts, 4),
+    unspentStatPoints: num(felts, 5),
     baseStats: {
-      strength: num(felts, 3),
-      intellect: num(felts, 4),
-      agility: num(felts, 5),
-      spirit: num(felts, 6),
+      strength: num(felts, 6),
+      intellect: num(felts, 7),
+      agility: num(felts, 8),
+      spirit: num(felts, 9),
     },
     strain: {
-      strength: num(felts, 7),
-      intellect: num(felts, 8),
-      agility: num(felts, 9),
-      spirit: num(felts, 10),
+      strength: num(felts, 10),
+      intellect: num(felts, 11),
+      agility: num(felts, 12),
+      spirit: num(felts, 13),
     },
     equipment: {
-      weapon: num(felts, 11),
-      armor: num(felts, 12),
-      trinket: num(felts, 13),
+      weapon: num(felts, 14),
+      armor: num(felts, 15),
+      trinket: num(felts, 16),
     },
-    inventoryBits: felt(felts, 14),
+    inventoryBits: felt(felts, 17),
   };
 }
 
@@ -349,10 +361,13 @@ export function decodeChoiceLog(felts: string[]): ChoiceLogView {
     healthDeltaSign: enumValue(deltaSignMap, num(felts, 12), "health sign"),
     healthDeltaAmount: num(felts, 13),
     statGain: num(felts, 14),
-    bossEncounter: bool(felts, 15),
-    bossDefeated: bool(felts, 16),
-    completedLevel: bool(felts, 17),
-    gameEnded: bool(felts, 18),
+    xpGain: num(felts, 15),
+    xpLevelAfter: num(felts, 16),
+    leveledUp: bool(felts, 17),
+    bossEncounter: bool(felts, 18),
+    bossDefeated: bool(felts, 19),
+    completedLevel: bool(felts, 20),
+    gameEnded: bool(felts, 21),
   };
 }
 

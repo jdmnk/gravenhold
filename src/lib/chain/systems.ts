@@ -48,6 +48,23 @@ export async function chooseOption(
   return tx.transaction_hash;
 }
 
+export async function assignStatPoint(
+  network: GravenholdNetwork,
+  signer: GameSigner,
+  runId: bigint,
+  stat: StatId,
+): Promise<string> {
+  const tx = await signer.execute([
+    {
+      calldata: CallData.compile([runId, statToChainId[stat]]),
+      contractAddress: network.actionsAddress,
+      entrypoint: "assign_stat_point",
+    },
+  ]);
+  await waitForSuccess(network, tx.transaction_hash);
+  return tx.transaction_hash;
+}
+
 export async function chooseReward(
   network: GravenholdNetwork,
   signer: GameSigner,

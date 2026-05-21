@@ -2,6 +2,7 @@
 pub trait IActions<T> {
     fn start_run(ref self: T, seed: felt252) -> felt252;
     fn choose_option(ref self: T, run_id: felt252, stat: u8);
+    fn assign_stat_point(ref self: T, run_id: felt252, stat: u8);
     fn choose_reward(ref self: T, run_id: felt252, reward_index: u8, equip_now: bool);
     fn equip_item(ref self: T, run_id: felt252, item_id: u16);
 }
@@ -36,7 +37,7 @@ pub mod actions {
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
     use gravenhold::constants::{
         BOSS_VICTORY_HEAL, DEFAULT_NS, MAX_LEVEL, PHASE_COMPLETE, PHASE_ENCOUNTER, PHASE_REWARD,
-        REWARD_CHOICES_PER_LEVEL, REWARD_REASON_MIXED, REWARD_REASON_RANDOM,
+        PHASE_STAT_ALLOCATE, REWARD_CHOICES_PER_LEVEL, REWARD_REASON_MIXED, REWARD_REASON_RANDOM,
         REWARD_REASON_STRONGEST_STAT, SIGN_NEGATIVE, SIGN_POSITIVE, SIGN_ZERO, STATUS_LOST,
         STATUS_PLAYING, STATUS_REWARD, STATUS_WON,
     };
@@ -50,6 +51,7 @@ pub mod actions {
         add_inventory, equip_owned_item, inventory_has, item_exists, pick_reward_item, reward_tier,
         strongest_stat,
     };
+    use gravenhold::helpers::progression::{apply_xp, xp_for_encounter};
     use gravenhold::models::index::{
         ActiveRun, Character, ChoiceForecast, ChoiceLog, CurrentEncounter, ItemView,
         PlayerRunCounter, RewardLog, RewardOffer, Run,
@@ -69,24 +71,30 @@ pub mod actions {
         pub const BAD_ITEM: felt252 = 'Item: invalid';
         pub const ITEM_NOT_OWNED: felt252 = 'Item: not owned';
         pub const RUN_LOST: felt252 = 'Run: lost';
+        pub const NO_STAT_POINTS: felt252 = 'Stats: no points';
+        pub const NOT_STAT_ALLOCATE: felt252 = 'Run: not stat alloc';
     }
 
-    fn apply_stat_gain(mut character: Character, stat: u8, gain: u16) -> Character {
-        if gain == 0 {
-            return character;
-        }
-
+    fn apply_stat_point(mut character: Character, stat: u8) -> Character {
         if stat == STAT_STRENGTH {
-            character.strength += gain;
+            character.strength += 1;
         } else if stat == STAT_INTELLECT {
-            character.intellect += gain;
+            character.intellect += 1;
         } else if stat == STAT_AGILITY {
-            character.agility += gain;
+            character.agility += 1;
         } else if stat == STAT_SPIRIT {
-            character.spirit += gain;
+            character.spirit += 1;
         }
 
         character
+    }
+
+    fn status_for_phase(phase: u8) -> u8 {
+        if phase == PHASE_REWARD {
+            STATUS_REWARD
+        } else {
+            STATUS_PLAYING
+        }
     }
 
     fn health_delta_sign_and_amount(before: u16, after: u16) -> (u8, u16) {
@@ -213,14 +221,11 @@ pub mod actions {
             let forecast: ChoiceForecast = forecast_choice(@run, @character, stat);
             let encounter = current_encounter(run.seed, run.level, run.encounter_index);
             let old_health = character.health;
-            let stat_gain = if forecast.success {
-                forecast.stat_gain_on_success
-            } else {
-                0
-            };
+            let old_xp_level = character.xp_level;
+            let stat_gain = 0;
+            let xp_gain = xp_for_encounter(run.level, forecast.boss_encounter);
 
             if forecast.success {
-                character = apply_stat_gain(character, stat, stat_gain);
                 if forecast.boss_encounter {
                     character.health = heal_to_max(
                         character.health, BOSS_VICTORY_HEAL, character.max_health,
@@ -232,6 +237,8 @@ pub mod actions {
                 character.health -= forecast.health_loss_on_failure;
             }
             character = apply_choice_strain(character, stat, forecast.success, forecast.approach);
+            character = apply_xp(character, xp_gain);
+            let leveled_up = character.xp_level > old_xp_level;
 
             let (health_delta_sign, health_delta_amount) = health_delta_sign_and_amount(
                 old_health, character.health,
@@ -248,25 +255,43 @@ pub mod actions {
 
             let choice_index = run.choice_count;
             run.choice_count = choice_index + 1;
+            let mut should_write_reward = false;
 
             if defeated_by_failure {
                 run.status = STATUS_LOST;
                 run.phase = PHASE_COMPLETE;
+                run.pending_phase = PHASE_COMPLETE;
                 run.ended_at = get_block_timestamp();
             } else if !should_retry_boss {
                 if completed_level {
                     if run.level >= MAX_LEVEL {
                         run.status = STATUS_WON;
                         run.phase = PHASE_COMPLETE;
+                        run.pending_phase = PHASE_COMPLETE;
                         run.ended_at = get_block_timestamp();
                     } else {
                         run.status = STATUS_REWARD;
                         run.phase = PHASE_REWARD;
-                        write_reward_offers(store, @run, @character);
+                        run.pending_phase = PHASE_REWARD;
+                        should_write_reward = true;
                     }
                 } else {
                     run.encounter_index += 1;
+                    run.status = STATUS_PLAYING;
+                    run.phase = PHASE_ENCOUNTER;
+                    run.pending_phase = PHASE_ENCOUNTER;
                 }
+            }
+
+            if run.phase != PHASE_COMPLETE && character.unspent_stat_points > 0 {
+                should_write_reward = false;
+                run.pending_phase = run.phase;
+                run.status = STATUS_PLAYING;
+                run.phase = PHASE_STAT_ALLOCATE;
+            }
+
+            if should_write_reward {
+                write_reward_offers(store, @run, @character);
             }
 
             store
@@ -287,12 +312,47 @@ pub mod actions {
                         health_delta_sign,
                         health_delta_amount,
                         stat_gain,
+                        xp_gain,
+                        xp_level_after: character.xp_level,
+                        leveled_up,
                         boss_encounter: forecast.boss_encounter,
                         boss_defeated,
                         completed_level,
                         game_ended: run.phase == PHASE_COMPLETE,
                     },
                 );
+            store.set_character(@character);
+            store.set_run(@run);
+        }
+
+        fn assign_stat_point(ref self: ContractState, run_id: felt252, stat: u8) {
+            assert(is_valid_stat(stat), Errors::INVALID_STAT);
+
+            let world: WorldStorage = self.world(@DEFAULT_NS());
+            let mut store = StoreTrait::new(world);
+            let mut run: Run = store.run(run_id);
+            run.assert_exists();
+            run.assert_owner(get_caller_address());
+            assert(run.status == STATUS_PLAYING, Errors::NOT_PLAYING);
+            assert(run.phase == PHASE_STAT_ALLOCATE, Errors::NOT_STAT_ALLOCATE);
+
+            let mut character: Character = store.character(run_id);
+            assert(character.unspent_stat_points > 0, Errors::NO_STAT_POINTS);
+
+            character = apply_stat_point(character, stat);
+            character.unspent_stat_points -= 1;
+
+            if character.unspent_stat_points == 0 {
+                let next_phase = run.pending_phase;
+                run.phase = next_phase;
+                run.status = status_for_phase(next_phase);
+                run.pending_phase = PHASE_ENCOUNTER;
+
+                if next_phase == PHASE_REWARD {
+                    write_reward_offers(store, @run, @character);
+                }
+            }
+
             store.set_character(@character);
             store.set_run(@run);
         }
@@ -335,6 +395,7 @@ pub mod actions {
             run.encounter_index = 0;
             run.status = STATUS_PLAYING;
             run.phase = PHASE_ENCOUNTER;
+            run.pending_phase = PHASE_ENCOUNTER;
 
             store.set_character(@character);
             store.set_run(@run);

@@ -23,6 +23,7 @@ import {
 } from "@/lib/assets/gameAssets";
 import { getNetwork, type GravenholdNetwork } from "@/lib/chain/networkConfig";
 import {
+  assignStatPoint,
   chooseOption,
   chooseReward,
   equipItem,
@@ -40,6 +41,7 @@ import {
   type ChoiceLogView,
   type EncounterCategory,
   type EncounterDifficulty,
+  type CurrentEncounterView,
   type EquipmentSlot,
   type ItemView,
   type RewardOfferView,
@@ -90,6 +92,7 @@ type ChainConnection =
 type PendingAction =
   | { kind: "start" }
   | { kind: "choice"; stat: StatId }
+  | { kind: "stat"; stat: StatId }
   | { equipNow: boolean; kind: "reward"; rewardIndex: number }
   | { itemId: number; kind: "equip" };
 
@@ -278,6 +281,14 @@ export default function Home() {
     });
   }
 
+  function handleAssignStatPoint(stat: StatId) {
+    void runAction({ kind: "stat", stat }, async () => {
+      if (!network || !session || !bundle) throw new Error("Run is not ready.");
+      await assignStatPoint(network, session.signer, bundle.run.id, stat);
+      await loadByRunId(network, bundle.run.id);
+    });
+  }
+
   function handleReward(reward: RewardOfferView, equipNow: boolean) {
     void runAction(
       { equipNow, kind: "reward", rewardIndex: reward.index },
@@ -364,6 +375,7 @@ export default function Home() {
             seedInput={seedInput}
             session={session}
             onChooseStat={handleChooseStat}
+            onAssignStatPoint={handleAssignStatPoint}
             onEquip={handleEquip}
             onReward={handleReward}
             onRestart={handleStartRun}
@@ -521,6 +533,7 @@ function GameConsole({
   seedInput,
   session,
   onChooseStat,
+  onAssignStatPoint,
   onEquip,
   onReward,
   onRestart,
@@ -537,6 +550,7 @@ function GameConsole({
   seedInput: string;
   session: GameSession;
   onChooseStat: (stat: StatId) => void;
+  onAssignStatPoint: (stat: StatId) => void;
   onEquip: (itemId: number) => void;
   onReward: (reward: RewardOfferView, equipNow: boolean) => void;
   onRestart: () => void;
@@ -551,6 +565,7 @@ function GameConsole({
       currentText &&
       bundle.forecasts,
   );
+  const showingStatAllocation = bundle.run.phase === "stat_allocate";
   const showingReward = bundle.run.phase === "reward";
   const showingComplete = bundle.run.phase === "complete";
   const latestLog = getLatestChoiceLog(bundle);
@@ -608,6 +623,16 @@ function GameConsole({
             />
           ) : null}
 
+          {showingStatAllocation ? (
+            <StatAllocationPanel
+              bundle={bundle}
+              busy={busy}
+              pendingAction={pendingAction}
+              pendingLabel={pendingLabel}
+              onAssignStatPoint={onAssignStatPoint}
+            />
+          ) : null}
+
           {showingComplete ? (
             <CompletePanel
               bundle={bundle}
@@ -636,7 +661,8 @@ function GameConsole({
 
 function RunSummary({ bundle }: { bundle: RunBundle }) {
   const healthPercent = getHealthPercent(bundle);
-  const progressPercent = getRunProgressPercent(bundle);
+  const xpRequired = getXpRequiredForLevel(bundle.character.xpLevel);
+  const xpPercent = getXpPercent(bundle);
 
   return (
     <section aria-label="Run summary" className="run-summary">
@@ -653,10 +679,15 @@ function RunSummary({ bundle }: { bundle: RunBundle }) {
         </div>
       </div>
       <div className="bar-block">
-        <b>{statLabels[getDominantEffectiveStat(bundle)]} build</b>
-        <p>{getRecentChoiceFocus(bundle)}</p>
+        <b>XP Level {bundle.character.xpLevel}</b>
+        <p>
+          {bundle.character.xp}/{xpRequired} XP
+          {bundle.character.unspentStatPoints > 0
+            ? ` / ${bundle.character.unspentStatPoints} point`
+            : ""}
+        </p>
         <div className="meter progress-meter" aria-hidden="true">
-          <div style={{ width: `${progressPercent}%` }} />
+          <div style={{ width: `${xpPercent}%` }} />
         </div>
       </div>
     </section>
@@ -866,7 +897,8 @@ function LatestResultBadge({ log }: { log: ChoiceLogView }) {
       <b>{log.success ? "Passed" : "Failed"}</b>
       <p>
         {statShortLabels[log.stat]} {log.effectiveStat}/{log.difficulty}
-        {log.statGain > 0 ? ` / +${log.statGain}` : ""}
+        {log.xpGain > 0 ? ` / +${log.xpGain} XP` : ""}
+        {log.leveledUp ? ` / Level ${log.xpLevelAfter}` : ""}
         {log.healthDeltaAmount > 0
           ? ` / ${formatDelta(log.healthDeltaSign, log.healthDeltaAmount)} HP`
           : ""}
@@ -932,6 +964,7 @@ function EncounterPanel({
             secondaryStat={getChoiceSecondaryStat(bundle, bundle.forecasts![stat])}
             stat={stat}
             text={currentText.options[stat]}
+            xpGain={getEncounterXp(current)}
             onChoiceClick={onChoiceClick}
             onChoose={onChooseStat}
           />
@@ -1000,6 +1033,7 @@ function ChoiceButton({
   secondaryStat,
   stat,
   text,
+  xpGain,
   onChoiceClick,
   onChoose,
 }: {
@@ -1008,6 +1042,7 @@ function ChoiceButton({
   secondaryStat: StatId | null;
   stat: StatId;
   text: { description: string; label: string };
+  xpGain: number;
   onChoiceClick: () => void;
   onChoose: (stat: StatId) => void;
 }) {
@@ -1060,11 +1095,9 @@ function ChoiceButton({
         <div>
           <dt>Change</dt>
           <dd>
-            {forecast.success && forecast.statGainOnSuccess > 0
-              ? `+${forecast.statGainOnSuccess} ${statShortLabels[stat]}`
-              : forecast.success
-                ? "Stable"
-                : `-${forecast.healthLossOnFailure} HP`}
+            {forecast.success
+              ? `+${xpGain} XP`
+              : `-${forecast.healthLossOnFailure} HP, +${xpGain} XP`}
           </dd>
         </div>
       </dl>
@@ -1092,6 +1125,94 @@ function getChoiceSecondaryStat(
 
   const supportStat = getSecondHighestEffectiveStat(bundle);
   return supportStat === forecast.stat ? null : supportStat;
+}
+
+function StatAllocationPanel({
+  bundle,
+  busy,
+  pendingAction,
+  pendingLabel,
+  onAssignStatPoint,
+}: {
+  bundle: RunBundle;
+  busy: boolean;
+  pendingAction: PendingAction | null;
+  pendingLabel: string | null;
+  onAssignStatPoint: (stat: StatId) => void;
+}) {
+  const points = bundle.character.unspentStatPoints;
+  const nextStep = getPhaseLabel(bundle.run.pendingPhase);
+
+  return (
+    <section aria-label="Assign stat point" className="stat-allocation-panel">
+      {pendingLabel ? <ScenePendingOverlay label={pendingLabel} /> : null}
+      <header className="stat-allocation-header">
+        <div>
+          <h2>Level {bundle.character.xpLevel}</h2>
+          <p>
+            Spend {points} stat point{points === 1 ? "" : "s"} to continue to{" "}
+            {nextStep}.
+          </p>
+        </div>
+        <div className="xp-readout">
+          <b>{bundle.character.xp} XP</b>
+          <p>toward level {bundle.character.xpLevel + 1}</p>
+        </div>
+      </header>
+
+      <div className="stat-allocation-grid">
+        {statIds.map((stat) => {
+          const pending = pendingAction?.kind === "stat" && pendingAction.stat === stat;
+          const base = bundle.character.baseStats[stat];
+          const equipment = getEquipmentStatBonus(bundle, stat);
+          const effective = base + equipment;
+
+          return (
+            <article
+              className={`stat-allocation-card stat-tone ${statClass(stat)}`}
+              key={stat}
+            >
+              <div className="stat-allocation-topline">
+                <img
+                  alt=""
+                  className="stat-icon"
+                  height="56"
+                  src={statIconFor(stat)}
+                  width="56"
+                />
+                <h3>{statLabels[stat]}</h3>
+              </div>
+              <dl>
+                <div>
+                  <dt>Base</dt>
+                  <dd>
+                    {base} {"->"} {base + 1}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Gear</dt>
+                  <dd>+{equipment}</dd>
+                </div>
+                <div>
+                  <dt>Effective</dt>
+                  <dd>
+                    {effective} {"->"} {effective + 1}
+                  </dd>
+                </div>
+              </dl>
+              <button
+                disabled={busy}
+                onClick={() => onAssignStatPoint(stat)}
+                type="button"
+              >
+                {pending ? "Assigning..." : `Add ${statShortLabels[stat]}`}
+              </button>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 function RewardPanel({
@@ -1386,9 +1507,8 @@ function HistoryPanel({ logs }: { logs: ChoiceLogView[] }) {
               L{log.level} {encounter.title}:{" "}
               {log.success ? "success" : "failure"} with {statLabels[log.stat]}{" "}
               ({log.effectiveStat}/{log.difficulty})
-              {log.statGain > 0
-                ? `, +${log.statGain} ${statShortLabels[log.stat]}`
-                : ""}
+              {log.xpGain > 0 ? `, +${log.xpGain} XP` : ""}
+              {log.leveledUp ? `, XP level ${log.xpLevelAfter}` : ""}
               {log.healthDeltaAmount > 0
                 ? `, ${formatDelta(log.healthDeltaSign, log.healthDeltaAmount)} HP`
                 : ""}
@@ -1410,6 +1530,7 @@ function DebugPanel({ bundle }: { bundle: RunBundle }) {
       choiceCount: bundle.run.choiceCount,
       encounterIndex: bundle.run.encounterIndex,
       level: bundle.run.level,
+      pendingPhase: bundle.run.pendingPhase,
       phase: bundle.run.phase,
       runId: `0x${bundle.run.id.toString(16)}`,
       status: bundle.run.status,
@@ -1585,6 +1706,8 @@ function getPendingActionLabel(action: PendingAction): string {
       return "Starting run...";
     case "choice":
       return `Resolving ${statLabels[action.stat]}...`;
+    case "stat":
+      return `Assigning ${statLabels[action.stat]}...`;
     case "reward":
       return action.equipNow ? "Equipping reward..." : "Claiming reward...";
     case "equip":
@@ -1595,8 +1718,22 @@ function getPendingActionLabel(action: PendingAction): string {
 function getRunStepLabel(bundle: RunBundle): string {
   if (bundle.run.phase === "encounter")
     return `${bundle.run.encounterIndex + 1}/3`;
+  if (bundle.run.phase === "stat_allocate") return "Stats";
   if (bundle.run.phase === "reward") return "Reward";
   return "Complete";
+}
+
+function getPhaseLabel(phase: RunBundle["run"]["phase"]): string {
+  switch (phase) {
+    case "encounter":
+      return "the next encounter";
+    case "reward":
+      return "rewards";
+    case "stat_allocate":
+      return "stat allocation";
+    case "complete":
+      return "the end";
+  }
 }
 
 function createRunSeed(network: GravenholdNetwork): string {
@@ -1692,23 +1829,6 @@ function getSecondHighestEffectiveStat(bundle: RunBundle): StatId {
   return sorted[1] ?? sorted[0];
 }
 
-function getRecentChoiceFocus(bundle: RunBundle): string {
-  const counts = Object.fromEntries(
-    statIds.map((stat) => [stat, 0]),
-  ) as Record<StatId, number>;
-
-  for (const choice of bundle.recentChoices) {
-    counts[choice.stat] += 1;
-  }
-
-  const dominantStat = statIds.reduce((dominant, stat) =>
-    counts[stat] > counts[dominant] ? stat : dominant,
-  );
-  const total = bundle.recentChoices.length;
-  if (total === 0) return "unformed";
-  return counts[dominantStat] / total >= 0.6 ? "focused" : "drifting";
-}
-
 function getHealthPercent(bundle: RunBundle): number {
   return Math.max(
     0,
@@ -1719,13 +1839,27 @@ function getHealthPercent(bundle: RunBundle): number {
   );
 }
 
-function getRunProgressPercent(bundle: RunBundle): number {
-  const completedSteps =
-    (bundle.run.level - 1) * 3 +
-    (bundle.run.phase === "reward" || bundle.run.phase === "complete"
-      ? 3
-      : bundle.run.encounterIndex);
-  return Math.max(0, Math.min(100, Math.round((completedSteps / 60) * 100)));
+function getEncounterXp(encounter: CurrentEncounterView): number {
+  const boss =
+    encounter.source === "boss" || encounter.difficultyKind === "boss";
+  return boss ? 10 + encounter.level * 2 : 5 + encounter.level;
+}
+
+function getXpRequiredForLevel(xpLevel: number): number {
+  return 20 + xpLevel * 10;
+}
+
+function getXpPercent(bundle: RunBundle): number {
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(
+        (bundle.character.xp / getXpRequiredForLevel(bundle.character.xpLevel)) *
+          100,
+      ),
+    ),
+  );
 }
 
 function shortAddress(address: string): string {

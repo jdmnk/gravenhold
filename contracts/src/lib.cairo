@@ -8,6 +8,7 @@ pub mod content {
 pub mod helpers {
     pub mod encounters;
     pub mod items;
+    pub mod progression;
 }
 
 pub mod models {

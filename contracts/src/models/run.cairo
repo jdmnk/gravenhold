@@ -1,6 +1,7 @@
 use starknet::ContractAddress;
 use crate::constants::{
-    PHASE_ENCOUNTER, STARTING_HEALTH, STARTING_STAT, STATUS_PLAYING,
+    PHASE_ENCOUNTER, STARTING_HEALTH, STARTING_STAT, STARTING_XP, STARTING_XP_LEVEL,
+    STATUS_PLAYING,
 };
 pub use crate::models::index::{Character, Run};
 
@@ -19,6 +20,7 @@ pub impl RunImpl of RunTrait {
             nonce,
             status: STATUS_PLAYING,
             phase: PHASE_ENCOUNTER,
+            pending_phase: PHASE_ENCOUNTER,
             level: 1,
             encounter_index: 0,
             choice_count: 0,
@@ -48,6 +50,9 @@ pub impl CharacterImpl of CharacterTrait {
             run_id,
             health: STARTING_HEALTH,
             max_health: STARTING_HEALTH,
+            xp_level: STARTING_XP_LEVEL,
+            xp: STARTING_XP,
+            unspent_stat_points: 0,
             strength: STARTING_STAT,
             intellect: STARTING_STAT,
             agility: STARTING_STAT,
@@ -66,7 +71,7 @@ pub impl CharacterImpl of CharacterTrait {
 
 #[cfg(test)]
 mod tests {
-    use crate::constants::{STARTING_HEALTH, STARTING_STAT};
+    use crate::constants::{STARTING_HEALTH, STARTING_STAT, STARTING_XP, STARTING_XP_LEVEL};
     use crate::models::run::CharacterTrait;
 
     #[test]
@@ -76,6 +81,9 @@ mod tests {
         assert_eq!(character.run_id, 123);
         assert_eq!(character.health, STARTING_HEALTH);
         assert_eq!(character.max_health, STARTING_HEALTH);
+        assert_eq!(character.xp_level, STARTING_XP_LEVEL);
+        assert_eq!(character.xp, STARTING_XP);
+        assert_eq!(character.unspent_stat_points, 0);
         assert_eq!(character.strength, STARTING_STAT);
         assert_eq!(character.intellect, STARTING_STAT);
         assert_eq!(character.agility, STARTING_STAT);

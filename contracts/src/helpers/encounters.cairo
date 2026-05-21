@@ -1,10 +1,9 @@
 use core::poseidon::poseidon_hash_span;
 use crate::constants::{
-    BOSS_DIFFICULTY_OFFSET, BOSS_FAILURE_DAMAGE, BOSS_SUCCESS_STAT_GAIN,
-    BOSS_SUPPORT_DAMAGE_PENALTY, BOSS_SUPPORT_DIFFICULTY_PENALTY, ENCOUNTERS_PER_LEVEL,
-    HARD_DIFFICULTY_OFFSET, HIGH_STRAIN_DAMAGE_THRESHOLD, HIGH_STRAIN_FAILURE_DAMAGE,
-    HIGH_STRAIN_NO_GAIN_THRESHOLD, MAX_LEVEL, MAX_STRAIN, NORMAL_DIFFICULTY_OFFSET,
-    NORMAL_FAILURE_DAMAGE, NORMAL_SUCCESS_STAT_GAIN, SIGN_NEGATIVE, SIGN_POSITIVE, SIGN_ZERO,
+    BOSS_DIFFICULTY_OFFSET, BOSS_FAILURE_DAMAGE, BOSS_SUPPORT_DAMAGE_PENALTY,
+    BOSS_SUPPORT_DIFFICULTY_PENALTY, ENCOUNTERS_PER_LEVEL, HARD_DIFFICULTY_OFFSET,
+    HIGH_STRAIN_DAMAGE_THRESHOLD, HIGH_STRAIN_FAILURE_DAMAGE, MAX_LEVEL, MAX_STRAIN,
+    NORMAL_DIFFICULTY_OFFSET, NORMAL_FAILURE_DAMAGE, SIGN_NEGATIVE, SIGN_POSITIVE, SIGN_ZERO,
     SOURCE_BOSS, SOURCE_FIXED, SOURCE_RANDOM, STRAIN_DIFFICULTY_PER_POINT,
     STRAINED_APPROACH_DIFFICULTY, STRAINED_APPROACH_FAILURE_DAMAGE,
 };
@@ -186,16 +185,6 @@ fn boss_support_damage_amount(boss_encounter: bool, support: u16, required: u16)
     }
 }
 
-pub fn stat_gain_for_choice(boss_encounter: bool, strain_before: u8, approach: u8) -> u16 {
-    if boss_encounter {
-        BOSS_SUCCESS_STAT_GAIN
-    } else if strain_before >= HIGH_STRAIN_NO_GAIN_THRESHOLD && approach != APPROACH_FAVORED {
-        0
-    } else {
-        NORMAL_SUCCESS_STAT_GAIN
-    }
-}
-
 pub fn failure_damage_for_choice(
     boss_encounter: bool, strain_before: u8, approach: u8, boss_support_damage: u16,
 ) -> u16 {
@@ -307,7 +296,6 @@ pub fn forecast_choice(run: @Run, character: @Character, stat: u8) -> ChoiceFore
         + boss_support_difficulty;
     let effective = effective_stat(character, stat);
     let success = effective >= difficulty;
-    let stat_gain_on_success = stat_gain_for_choice(boss_encounter, strain_before, approach);
     let health_loss_on_failure = failure_damage_for_choice(
         boss_encounter, strain_before, approach, boss_support_damage,
     );
@@ -324,7 +312,7 @@ pub fn forecast_choice(run: @Run, character: @Character, stat: u8) -> ChoiceFore
         approach,
         success,
         boss_encounter,
-        stat_gain_on_success,
+        stat_gain_on_success: 0,
         health_loss_on_failure,
         would_lose_on_failure,
         boss_retries_on_failure: boss_encounter && !would_lose_on_failure,
@@ -337,7 +325,7 @@ pub fn forecast_choice(run: @Run, character: @Character, stat: u8) -> ChoiceFore
         boss_support_value: support_value,
         boss_support_difficulty_amount: boss_support_difficulty,
         boss_support_damage_amount: boss_support_damage,
-        stat_gain_blocked_by_strain: stat_gain_on_success == 0,
+        stat_gain_blocked_by_strain: false,
     }
 }
 
@@ -349,7 +337,6 @@ mod tests {
     use crate::helpers::encounters::{
         apply_choice_strain, boss_support_required, current_encounter, difficulty_value,
         failure_damage_for_choice, option_difficulty, second_highest_effective_stat,
-        stat_gain_for_choice,
     };
     use crate::models::run::CharacterTrait;
 
@@ -394,13 +381,6 @@ mod tests {
         let updated = apply_choice_strain(character, STAT_STRENGTH, true, APPROACH_FAVORED);
 
         assert_eq!(updated.strength_strain, 2);
-    }
-
-    #[test]
-    fn test_high_strain_blocks_normal_stat_gain() {
-        assert_eq!(stat_gain_for_choice(false, 2, APPROACH_STANDARD), 0);
-        assert_eq!(stat_gain_for_choice(false, 2, APPROACH_FAVORED), 1);
-        assert_eq!(stat_gain_for_choice(true, 3, APPROACH_STANDARD), 2);
     }
 
     #[test]

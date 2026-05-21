@@ -864,6 +864,7 @@ img {
 
 .stone-panel,
 .encounter-panel,
+.stat-allocation-panel,
 .reward-panel,
 .complete-panel,
 .history-panel {
@@ -958,6 +959,7 @@ img {
 }
 
 .encounter-panel,
+.stat-allocation-panel,
 .reward-panel,
 .complete-panel {
   height: 100%;
@@ -969,6 +971,92 @@ img {
 .encounter-panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.stat-allocation-panel {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+}
+
+.stat-allocation-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 10px;
+  border: 2px solid #4b3828;
+  background: rgba(18, 13, 10, 0.68);
+}
+
+.stat-allocation-header h2 {
+  color: #ffd37a;
+  font-size: 42px;
+  line-height: 0.95;
+}
+
+.stat-allocation-header p,
+.xp-readout p {
+  color: #c3a282;
+}
+
+.xp-readout {
+  min-width: 170px;
+  padding: 8px;
+  border: 2px solid #5b402b;
+  color: #f0d78a;
+  background: rgba(12, 9, 8, 0.76);
+  text-align: right;
+}
+
+.stat-allocation-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+
+.stat-allocation-card {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  padding: 10px;
+  border: 2px solid var(--stat-color);
+  color: #e7c99e;
+  background:
+    linear-gradient(rgba(20, 14, 11, 0.82), rgba(11, 8, 7, 0.94)),
+    url("/assets/game/ui/bg-dark.png") center / 120px;
+}
+
+.stat-allocation-topline {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.stat-allocation-card dl {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.stat-allocation-card dl div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(138, 103, 47, 0.34);
+}
+
+.stat-allocation-card dt {
+  color: #b89473;
+}
+
+.stat-allocation-card dd {
+  margin: 0;
+  color: var(--stat-color);
 }
 
 .encounter-art,
@@ -1698,6 +1786,10 @@ img {
   .choice-card button {
     min-height: 28px;
   }
+
+  .stat-allocation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 940px) {
@@ -1715,6 +1807,7 @@ img {
 
   .game-layout,
   .run-summary,
+  .stat-allocation-grid,
   .reward-grid {
     grid-template-columns: 1fr;
   }
@@ -1732,6 +1825,7 @@ img {
   }
 
   .encounter-panel,
+  .stat-allocation-panel,
   .reward-panel,
   .complete-panel {
     height: auto;
@@ -1743,6 +1837,7 @@ img {
   }
 
   .reward-panel,
+  .stat-allocation-panel,
   .complete-panel {
     display: block;
   }
@@ -1813,6 +1908,7 @@ img {
 
   .stone-panel,
   .encounter-panel,
+  .stat-allocation-panel,
   .reward-panel,
   .complete-panel,
   .history-panel {
@@ -1842,6 +1938,15 @@ img {
 
   .button-row {
     grid-template-columns: 1fr;
+  }
+
+  .stat-allocation-header {
+    grid-template-columns: 1fr;
+  }
+
+  .xp-readout {
+    min-width: 0;
+    text-align: left;
   }
 
   .how-it-works-backdrop {

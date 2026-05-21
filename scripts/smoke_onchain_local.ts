@@ -39,7 +39,7 @@ const run = await provider.callContract({
 console.log(`Started local onchain run for seed "${seed}".`);
 console.log(`tx:     ${tx.transaction_hash}`);
 console.log(`run_id: ${runId.toString()}`);
-console.log(`level:  ${Number(BigInt(run[6] ?? "0"))}`);
+console.log(`level:  ${Number(BigInt(run[7] ?? "0"))}`);
 console.log(`phase:  ${Number(BigInt(run[5] ?? "0"))}`);
 
 async function callFirstFelt(entrypoint: string, calldata: Array<string | number | bigint>) {

@@ -12,14 +12,16 @@ Core contract:
 same seed + same player choices = same run
 ```
 
-The player moves through a 20-level path, resolves 3 encounters per level, earns item rewards, equips build-defining gear, and defeats boss gates by committing to a clear playstyle.
+The player moves through a 20-level path, resolves 3 encounters per level, earns XP, assigns stat points, chooses item rewards, equips build-defining gear, and defeats boss gates by committing to a clear playstyle.
 
 ## Current Loop
 
 ```txt
 start run
 resolve encounter choice
-gain stat on success or lose health on failure
+gain XP after each encounter
+if XP level increases, assign the earned stat point
+on failure, lose health
 after 3 encounters, choose one reward item
 equip or keep item
 advance level
@@ -101,18 +103,30 @@ strained: +3 difficulty
 
 Strained approach failure also adds 1 extra health loss.
 
-### Stat Gain Throttle
+### XP And Stat Points
 
-Normal success does not always give stat gain.
+Encounter choices no longer assign stat gains automatically. Each resolved encounter grants XP:
 
 ```txt
-if chosen stat strain before the choice >= 2 and approach is not favored:
-  normal success gives 0 stat gain
-else:
-  normal success gives normal stat gain
+normal encounter XP = 5 + path level
+boss encounter XP = 10 + path level * 2
 ```
 
-Boss success still gives boss stat gain.
+Character XP level is separate from the 20-level path. Each XP level requires slightly more XP:
+
+```txt
+XP required = 20 + XP level * 10
+```
+
+When the character gains an XP level:
+
+```txt
+unspent stat points +1
+run enters stat allocation phase
+player must assign all unspent stat points before continuing
+```
+
+Assigning a stat point increases the selected base stat by 1. Equipment bonuses still apply on top of base stats.
 
 ### Failure Damage Pressure
 
@@ -151,11 +165,16 @@ MAX_STRAIN = 3
 STRAIN_DIFFICULTY_PER_POINT = 1
 STRAINED_APPROACH_DIFFICULTY = 3
 STRAINED_APPROACH_FAILURE_DAMAGE = 1
-HIGH_STRAIN_NO_GAIN_THRESHOLD = 2
 HIGH_STRAIN_DAMAGE_THRESHOLD = 3
 HIGH_STRAIN_FAILURE_DAMAGE = 1
 BOSS_SUPPORT_DIFFICULTY_PENALTY = 2
 BOSS_SUPPORT_DAMAGE_PENALTY = 1
+NORMAL_ENCOUNTER_XP_BASE = 5
+BOSS_ENCOUNTER_XP_BASE = 10
+BOSS_ENCOUNTER_XP_LEVEL_MULTIPLIER = 2
+XP_BASE_REQUIRED = 20
+XP_REQUIRED_PER_LEVEL = 10
+STAT_POINTS_PER_XP_LEVEL = 1
 ```
 
 Target outcomes:

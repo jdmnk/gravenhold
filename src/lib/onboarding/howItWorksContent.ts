@@ -22,7 +22,7 @@ export const howItWorksScreens: HowItWorksScreen[] = [
       "Every choice compares your effective stat against the encounter difficulty. The card tells you if it should pass and what will change.",
     cues: [
       "Effective stat is base stat plus equipped gear.",
-      "Passing can grow the stat you used.",
+      "Every encounter grants XP after it resolves.",
       "Failing costs health.",
       "Repeating one stat builds strain, which can make later checks harsher.",
     ],
@@ -30,9 +30,9 @@ export const howItWorksScreens: HowItWorksScreen[] = [
   {
     title: "Shape your build between gates",
     detail:
-      "After clearing a level, take one reward and equip gear that supports the plan you are building toward.",
+      "When XP levels you up, spend the stat point before continuing. After clearing a path level, choose one reward.",
     cues: [
-      "Specializing makes your best approach reliable.",
+      "Assign stat points to make your best approach reliable.",
       "A support stat helps survive boss gates.",
       "Bosses wait at levels 5, 10, 15, and 20.",
       "Clear level 20 before your health runs out.",

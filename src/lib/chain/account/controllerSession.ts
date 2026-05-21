@@ -67,6 +67,11 @@ function gravenholdSessionPolicies(network: GravenholdNetwork): SessionPolicies 
             name: "Choose Option",
           },
           {
+            description: "Assign an earned stat point.",
+            entrypoint: "assign_stat_point",
+            name: "Assign Stat Point",
+          },
+          {
             description: "Choose one of the onchain reward offers.",
             entrypoint: "choose_reward",
             name: "Choose Reward",

@@ -1,4 +1,4 @@
-const HOW_IT_WORKS_SEEN_KEY = "gravenhold:how-it-works:v1";
+const HOW_IT_WORKS_SEEN_KEY = "gravenhold:how-it-works:v2";
 
 export function hasSeenHowItWorksIntro() {
   try {

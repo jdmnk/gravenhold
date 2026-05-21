@@ -314,7 +314,7 @@ export default function Home() {
   const showBootLoader = !initialLoadComplete && !bundle;
 
   useEffect(() => {
-    if (showBootLoader || bundle || hasSeenHowItWorks) return;
+    if (showBootLoader || !bundle || hasSeenHowItWorks) return;
     setHowItWorksOpen(true);
   }, [bundle, hasSeenHowItWorks, showBootLoader]);
 

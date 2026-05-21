@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { howItWorksSections } from "@/lib/onboarding/howItWorksContent";
+import { howItWorksScreens } from "@/lib/onboarding/howItWorksContent";
 
 type HowItWorksDialogProps = {
   onOpenChange: (open: boolean) => void;
@@ -12,9 +12,14 @@ export function HowItWorksDialog({
   open,
 }: HowItWorksDialogProps) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [activeScreen, setActiveScreen] = useState(0);
+  const screen = howItWorksScreens[activeScreen];
+  const canGoBack = activeScreen > 0;
+  const canGoNext = activeScreen < howItWorksScreens.length - 1;
 
   useEffect(() => {
     if (!open) return;
+    setActiveScreen(0);
     closeButtonRef.current?.focus();
   }, [open]);
 
@@ -27,6 +32,12 @@ export function HowItWorksDialog({
       onClick={() => onOpenChange(false)}
       onKeyDown={(event) => {
         if (event.key === "Escape") onOpenChange(false);
+        if (event.key === "ArrowLeft" && canGoBack) {
+          setActiveScreen((current) => current - 1);
+        }
+        if (event.key === "ArrowRight" && canGoNext) {
+          setActiveScreen((current) => current + 1);
+        }
       }}
       role="dialog"
     >
@@ -38,7 +49,7 @@ export function HowItWorksDialog({
         <header className="how-it-works-header">
           <div>
             <h2 id="how-it-works-title">How it works</h2>
-            <p>Read the rules once, then make the calls yourself.</p>
+            <p>Three quick screens before the first choice.</p>
           </div>
           <button
             aria-label="Close how it works"
@@ -51,18 +62,51 @@ export function HowItWorksDialog({
           </button>
         </header>
 
-        <div className="rules-grid">
-          {howItWorksSections.map((section) => (
-            <article key={section.title}>
-              <h3>{section.title}</h3>
-              <p>{section.body}</p>
-            </article>
+        <article className="how-it-works-screen">
+          <div className="screen-index" aria-hidden="true">
+            {activeScreen + 1}/{howItWorksScreens.length}
+          </div>
+          <h3>{screen.title}</h3>
+          <p>{screen.detail}</p>
+          <ul>
+            {screen.cues.map((cue) => (
+              <li key={cue}>{cue}</li>
+            ))}
+          </ul>
+        </article>
+
+        <nav className="screen-dots" aria-label="How it works screens">
+          {howItWorksScreens.map((item, index) => (
+            <button
+              aria-label={`Show screen ${index + 1}: ${item.title}`}
+              aria-current={index === activeScreen ? "step" : undefined}
+              className={index === activeScreen ? "is-active" : ""}
+              key={item.title}
+              onClick={() => setActiveScreen(index)}
+              type="button"
+            />
           ))}
-        </div>
+        </nav>
 
         <footer className="how-it-works-actions">
-          <button onClick={() => onOpenChange(false)} type="button">
-            Got it
+          <button
+            disabled={!canGoBack}
+            onClick={() => setActiveScreen((current) => current - 1)}
+            type="button"
+          >
+            Back
+          </button>
+          <button
+            onClick={() => {
+              if (canGoNext) {
+                setActiveScreen((current) => current + 1);
+                return;
+              }
+              onOpenChange(false);
+            }}
+            type="button"
+          >
+            {canGoNext ? "Next" : "Start"}
           </button>
         </footer>
       </section>

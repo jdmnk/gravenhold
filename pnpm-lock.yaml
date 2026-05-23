@@ -73,6 +73,9 @@ importers:
       globals:
         specifier: ^17.6.0
         version: 17.6.0
+      jiti:
+        specifier: 2.6.1
+        version: 2.6.1
       tailwindcss:
         specifier: ^4
         version: 4.2.4

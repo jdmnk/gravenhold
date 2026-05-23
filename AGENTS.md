@@ -19,8 +19,8 @@ The current design baseline is documented in `docs/new-rpg-doc.md`.
 ## Code Architecture Principles
 
 - Gravenhold is now a Vite + Dojo local-onchain game. Do not add Next.js code or `NEXT_PUBLIC_*` env vars.
-- Cairo/Dojo is the gameplay source of truth. Game state transitions, success checks, stat gains, damage, rewards, equipment rules, deterministic randomness, and rule-bearing content live under `contracts/src`.
-- React components display decoded chain state and submit transactions. They must not decide success, damage, stat gain, rewards, boss behavior, progression, or equipment effects.
+- Cairo/Dojo is the gameplay source of truth. Game state transitions, success checks, XP gains, stat point allocation, damage, rewards, equipment rules, deterministic randomness, and rule-bearing content live under `contracts/src`.
+- React components display decoded chain state and submit transactions. They must not decide success, damage, XP gain, stat point allocation, rewards, boss behavior, progression, or equipment effects.
 - Runtime client code must not import `src/lib/rpg/*`. The old TypeScript RPG engine may remain only as temporary legacy simulation/reference code until Cairo tests replace it.
 - Rule-bearing content is in `contracts/src/content/data.cairo`. TypeScript content under `src/lib/rpgContent` is display-only copy keyed by Cairo numeric IDs.
 - Prefer Dojo-generated TypeScript bindings from `sozo build --typescript` as client/contract integration grows. Avoid hand-maintained TS mirrors of Cairo models and calls where generated bindings are practical.

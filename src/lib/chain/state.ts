@@ -82,7 +82,6 @@ export type ChoiceForecastView = {
   approach: EncounterApproach;
   success: boolean;
   bossEncounter: boolean;
-  statGainOnSuccess: number;
   healthLossOnFailure: number;
   wouldLoseOnFailure: boolean;
   bossRetriesOnFailure: boolean;
@@ -95,7 +94,6 @@ export type ChoiceForecastView = {
   bossSupportValue: number;
   bossSupportDifficultyAmount: number;
   bossSupportDamageAmount: number;
-  statGainBlockedByStrain: boolean;
 };
 
 export type ChoiceLogView = {
@@ -113,7 +111,6 @@ export type ChoiceLogView = {
   difficultyModifierAmount: number;
   healthDeltaSign: DeltaSign;
   healthDeltaAmount: number;
-  statGain: number;
   xpGain: number;
   xpLevelAfter: number;
   leveledUp: boolean;
@@ -327,20 +324,18 @@ export function decodeChoiceForecast(felts: string[]): ChoiceForecastView {
     approach: enumValue(approachMap, num(felts, 6), "approach"),
     success: bool(felts, 7),
     bossEncounter: bool(felts, 8),
-    statGainOnSuccess: num(felts, 9),
-    healthLossOnFailure: num(felts, 10),
-    wouldLoseOnFailure: bool(felts, 11),
-    bossRetriesOnFailure: bool(felts, 12),
-    completedLevelOnSuccess: bool(felts, 13),
-    opensRewardOnSuccess: bool(felts, 14),
-    winsOnSuccess: bool(felts, 15),
-    strainBefore: num(felts, 16),
-    strainDifficultyAmount: num(felts, 17),
-    bossSupportRequired: num(felts, 18),
-    bossSupportValue: num(felts, 19),
-    bossSupportDifficultyAmount: num(felts, 20),
-    bossSupportDamageAmount: num(felts, 21),
-    statGainBlockedByStrain: bool(felts, 22),
+    healthLossOnFailure: num(felts, 9),
+    wouldLoseOnFailure: bool(felts, 10),
+    bossRetriesOnFailure: bool(felts, 11),
+    completedLevelOnSuccess: bool(felts, 12),
+    opensRewardOnSuccess: bool(felts, 13),
+    winsOnSuccess: bool(felts, 14),
+    strainBefore: num(felts, 15),
+    strainDifficultyAmount: num(felts, 16),
+    bossSupportRequired: num(felts, 17),
+    bossSupportValue: num(felts, 18),
+    bossSupportDifficultyAmount: num(felts, 19),
+    bossSupportDamageAmount: num(felts, 20),
   };
 }
 
@@ -360,14 +355,13 @@ export function decodeChoiceLog(felts: string[]): ChoiceLogView {
     difficultyModifierAmount: num(felts, 11),
     healthDeltaSign: enumValue(deltaSignMap, num(felts, 12), "health sign"),
     healthDeltaAmount: num(felts, 13),
-    statGain: num(felts, 14),
-    xpGain: num(felts, 15),
-    xpLevelAfter: num(felts, 16),
-    leveledUp: bool(felts, 17),
-    bossEncounter: bool(felts, 18),
-    bossDefeated: bool(felts, 19),
-    completedLevel: bool(felts, 20),
-    gameEnded: bool(felts, 21),
+    xpGain: num(felts, 14),
+    xpLevelAfter: num(felts, 15),
+    leveledUp: bool(felts, 16),
+    bossEncounter: bool(felts, 17),
+    bossDefeated: bool(felts, 18),
+    completedLevel: bool(felts, 19),
+    gameEnded: bool(felts, 20),
   };
 }
 

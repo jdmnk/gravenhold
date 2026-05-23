@@ -78,7 +78,6 @@ pub struct ChoiceLog {
     pub difficulty_modifier_amount: u16,
     pub health_delta_sign: u8,
     pub health_delta_amount: u16,
-    pub stat_gain: u16,
     pub xp_gain: u16,
     pub xp_level_after: u16,
     pub leveled_up: bool,
@@ -136,7 +135,6 @@ pub struct ChoiceForecast {
     pub approach: u8,
     pub success: bool,
     pub boss_encounter: bool,
-    pub stat_gain_on_success: u16,
     pub health_loss_on_failure: u16,
     pub would_lose_on_failure: bool,
     pub boss_retries_on_failure: bool,
@@ -149,7 +147,6 @@ pub struct ChoiceForecast {
     pub boss_support_value: u16,
     pub boss_support_difficulty_amount: u16,
     pub boss_support_damage_amount: u16,
-    pub stat_gain_blocked_by_strain: bool,
 }
 
 #[derive(Copy, Drop, Serde)]

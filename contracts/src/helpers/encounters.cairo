@@ -312,7 +312,6 @@ pub fn forecast_choice(run: @Run, character: @Character, stat: u8) -> ChoiceFore
         approach,
         success,
         boss_encounter,
-        stat_gain_on_success: 0,
         health_loss_on_failure,
         would_lose_on_failure,
         boss_retries_on_failure: boss_encounter && !would_lose_on_failure,
@@ -325,7 +324,6 @@ pub fn forecast_choice(run: @Run, character: @Character, stat: u8) -> ChoiceFore
         boss_support_value: support_value,
         boss_support_difficulty_amount: boss_support_difficulty,
         boss_support_damage_amount: boss_support_damage,
-        stat_gain_blocked_by_strain: false,
     }
 }
 

@@ -37,7 +37,7 @@ The visual target is a dark dungeon RPG screen that breathes: torch flicker, dri
 
 5. Core game UI
    - Keep top bar, stats, progression, and gear mostly stable.
-   - Add motion only where it clarifies state: current level, boss markers, health loss, stat gain, pending action.
+   - Add motion only where it clarifies state: current level, boss markers, health loss, XP gain, stat point allocation, pending action.
 
 ## Reusable Pieces
 

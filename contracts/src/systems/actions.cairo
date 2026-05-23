@@ -222,7 +222,6 @@ pub mod actions {
             let encounter = current_encounter(run.seed, run.level, run.encounter_index);
             let old_health = character.health;
             let old_xp_level = character.xp_level;
-            let stat_gain = 0;
             let xp_gain = xp_for_encounter(run.level, forecast.boss_encounter);
 
             if forecast.success {
@@ -311,7 +310,6 @@ pub mod actions {
                         difficulty_modifier_amount: forecast.difficulty_modifier_amount,
                         health_delta_sign,
                         health_delta_amount,
-                        stat_gain,
                         xp_gain,
                         xp_level_after: character.xp_level,
                         leveled_up,

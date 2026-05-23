@@ -1,7 +1,7 @@
 import { CallData } from "starknet";
 
 import { type GravenholdNetwork, providerForNetwork } from "./networkConfig";
-import { statToChainId, type StatId } from "./state";
+import { statIds, statToChainId, type StatId } from "./state";
 
 export type GameSigner = {
   execute: (calls: Array<{
@@ -48,19 +48,27 @@ export async function chooseOption(
   return tx.transaction_hash;
 }
 
-export async function assignStatPoint(
+export type StatPointAllocation = Record<StatId, number>;
+
+export async function assignStatPoints(
   network: GravenholdNetwork,
   signer: GameSigner,
   runId: bigint,
-  stat: StatId,
+  allocation: StatPointAllocation,
 ): Promise<string> {
-  const tx = await signer.execute([
-    {
+  const calls = statIds.flatMap((stat) =>
+    Array.from({ length: allocation[stat] }, () => ({
       calldata: CallData.compile([runId, statToChainId[stat]]),
       contractAddress: network.actionsAddress,
       entrypoint: "assign_stat_point",
-    },
-  ]);
+    })),
+  );
+
+  if (calls.length === 0) {
+    throw new Error("No stat points selected.");
+  }
+
+  const tx = await signer.execute(calls);
   await waitForSuccess(network, tx.transaction_hash);
   return tx.transaction_hash;
 }

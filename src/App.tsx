@@ -23,7 +23,8 @@ import {
 } from "@/lib/assets/gameAssets";
 import { getNetwork, type GravenholdNetwork } from "@/lib/chain/networkConfig";
 import {
-  assignStatPoint,
+  assignStatPoints,
+  type StatPointAllocation,
   chooseOption,
   chooseReward,
   equipItem,
@@ -92,7 +93,7 @@ type ChainConnection =
 type PendingAction =
   | { kind: "start" }
   | { kind: "choice"; stat: StatId }
-  | { kind: "stat"; stat: StatId }
+  | { allocation: StatPointAllocation; kind: "stat" }
   | { equipNow: boolean; kind: "reward"; rewardIndex: number }
   | { itemId: number; kind: "equip" };
 
@@ -281,10 +282,10 @@ export default function Home() {
     });
   }
 
-  function handleAssignStatPoint(stat: StatId) {
-    void runAction({ kind: "stat", stat }, async () => {
+  function handleAssignStatPoints(allocation: StatPointAllocation) {
+    void runAction({ allocation, kind: "stat" }, async () => {
       if (!network || !session || !bundle) throw new Error("Run is not ready.");
-      await assignStatPoint(network, session.signer, bundle.run.id, stat);
+      await assignStatPoints(network, session.signer, bundle.run.id, allocation);
       await loadByRunId(network, bundle.run.id);
     });
   }
@@ -375,7 +376,7 @@ export default function Home() {
             seedInput={seedInput}
             session={session}
             onChooseStat={handleChooseStat}
-            onAssignStatPoint={handleAssignStatPoint}
+            onAssignStatPoints={handleAssignStatPoints}
             onEquip={handleEquip}
             onReward={handleReward}
             onRestart={handleStartRun}
@@ -533,7 +534,7 @@ function GameConsole({
   seedInput,
   session,
   onChooseStat,
-  onAssignStatPoint,
+  onAssignStatPoints,
   onEquip,
   onReward,
   onRestart,
@@ -550,7 +551,7 @@ function GameConsole({
   seedInput: string;
   session: GameSession;
   onChooseStat: (stat: StatId) => void;
-  onAssignStatPoint: (stat: StatId) => void;
+  onAssignStatPoints: (allocation: StatPointAllocation) => void;
   onEquip: (itemId: number) => void;
   onReward: (reward: RewardOfferView, equipNow: boolean) => void;
   onRestart: () => void;
@@ -629,7 +630,7 @@ function GameConsole({
               busy={busy}
               pendingAction={pendingAction}
               pendingLabel={pendingLabel}
-              onAssignStatPoint={onAssignStatPoint}
+              onAssignStatPoints={onAssignStatPoints}
             />
           ) : null}
 
@@ -1132,16 +1133,35 @@ function StatAllocationPanel({
   busy,
   pendingAction,
   pendingLabel,
-  onAssignStatPoint,
+  onAssignStatPoints,
 }: {
   bundle: RunBundle;
   busy: boolean;
   pendingAction: PendingAction | null;
   pendingLabel: string | null;
-  onAssignStatPoint: (stat: StatId) => void;
+  onAssignStatPoints: (allocation: StatPointAllocation) => void;
 }) {
   const points = bundle.character.unspentStatPoints;
   const nextStep = getPhaseLabel(bundle.run.pendingPhase);
+  const [allocation, setAllocation] = useState<StatPointAllocation>(() =>
+    createEmptyAllocation(),
+  );
+  const allocatedPoints = getAllocatedPoints(allocation);
+  const pointsRemaining = Math.max(0, points - allocatedPoints);
+  const canConfirm = allocatedPoints === points && points > 0 && !busy;
+
+  useEffect(() => {
+    setAllocation(createEmptyAllocation());
+  }, [bundle.run.id, bundle.character.xpLevel, points]);
+
+  function adjustAllocation(stat: StatId, delta: number) {
+    setAllocation((current) => {
+      const nextValue = Math.max(0, current[stat] + delta);
+      const next = { ...current, [stat]: nextValue };
+      if (getAllocatedPoints(next) > points) return current;
+      return next;
+    });
+  }
 
   return (
     <section aria-label="Assign stat point" className="stat-allocation-panel">
@@ -1150,8 +1170,8 @@ function StatAllocationPanel({
         <div>
           <h2>Level {bundle.character.xpLevel}</h2>
           <p>
-            Spend {points} stat point{points === 1 ? "" : "s"} to continue to{" "}
-            {nextStep}.
+            Assign {points} stat point{points === 1 ? "" : "s"} to continue to{" "}
+            {nextStep}. {pointsRemaining} left.
           </p>
         </div>
         <div className="xp-readout">
@@ -1160,16 +1180,16 @@ function StatAllocationPanel({
         </div>
       </header>
 
-      <div className="stat-allocation-grid">
+      <div className="stat-allocation-list">
         {statIds.map((stat) => {
-          const pending = pendingAction?.kind === "stat" && pendingAction.stat === stat;
           const base = bundle.character.baseStats[stat];
           const equipment = getEquipmentStatBonus(bundle, stat);
           const effective = base + equipment;
+          const assigned = allocation[stat];
 
           return (
             <article
-              className={`stat-allocation-card stat-tone ${statClass(stat)}`}
+              className={`stat-allocation-row stat-tone ${statClass(stat)}`}
               key={stat}
             >
               <div className="stat-allocation-topline">
@@ -1186,7 +1206,7 @@ function StatAllocationPanel({
                 <div>
                   <dt>Base</dt>
                   <dd>
-                    {base} {"->"} {base + 1}
+                    {base} {"->"} {base + assigned}
                   </dd>
                 </div>
                 <div>
@@ -1196,21 +1216,46 @@ function StatAllocationPanel({
                 <div>
                   <dt>Effective</dt>
                   <dd>
-                    {effective} {"->"} {effective + 1}
+                    {effective} {"->"} {effective + assigned}
                   </dd>
                 </div>
               </dl>
-              <button
-                disabled={busy}
-                onClick={() => onAssignStatPoint(stat)}
-                type="button"
-              >
-                {pending ? "Assigning..." : `Add ${statShortLabels[stat]}`}
-              </button>
+              <div className="stat-stepper" aria-label={`${statLabels[stat]} allocation`}>
+                <button
+                  aria-label={`Remove ${statLabels[stat]} point`}
+                  disabled={busy || assigned === 0}
+                  onClick={() => adjustAllocation(stat, -1)}
+                  type="button"
+                >
+                  -
+                </button>
+                <b>{assigned}</b>
+                <button
+                  aria-label={`Add ${statLabels[stat]} point`}
+                  disabled={busy || pointsRemaining === 0}
+                  onClick={() => adjustAllocation(stat, 1)}
+                  type="button"
+                >
+                  +
+                </button>
+              </div>
             </article>
           );
         })}
       </div>
+
+      <footer className="stat-allocation-actions">
+        <p>
+          {allocatedPoints}/{points} assigned
+        </p>
+        <button
+          disabled={!canConfirm}
+          onClick={() => onAssignStatPoints(allocation)}
+          type="button"
+        >
+          {pendingAction?.kind === "stat" ? "Confirming..." : "Confirm"}
+        </button>
+      </footer>
     </section>
   );
 }
@@ -1707,7 +1752,7 @@ function getPendingActionLabel(action: PendingAction): string {
     case "choice":
       return `Resolving ${statLabels[action.stat]}...`;
     case "stat":
-      return `Assigning ${statLabels[action.stat]}...`;
+      return "Confirming stats...";
     case "reward":
       return action.equipNow ? "Equipping reward..." : "Claiming reward...";
     case "equip":
@@ -1734,6 +1779,19 @@ function getPhaseLabel(phase: RunBundle["run"]["phase"]): string {
     case "complete":
       return "the end";
   }
+}
+
+function createEmptyAllocation(): StatPointAllocation {
+  return {
+    agility: 0,
+    intellect: 0,
+    spirit: 0,
+    strength: 0,
+  };
+}
+
+function getAllocatedPoints(allocation: StatPointAllocation): number {
+  return statIds.reduce((total, stat) => total + allocation[stat], 0);
 }
 
 function createRunSeed(network: GravenholdNetwork): string {

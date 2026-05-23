@@ -105,7 +105,7 @@ Strained approach failure also adds 1 extra health loss.
 
 ### XP And Stat Points
 
-Encounter choices no longer assign stat gains automatically. Each resolved encounter grants XP:
+Encounter choices no longer raise base stats automatically. Each resolved encounter grants XP:
 
 ```txt
 normal encounter XP = 5 + path level

@@ -1,7 +1,7 @@
 [world]
 name = "Gravenhold Slot"
 description = "Gravenhold practice deployment"
-seed = "gravenhold_slot_v1"
+seed = "gravenhold_slot_v2"
 
 [namespace]
 default = "gravenhold"

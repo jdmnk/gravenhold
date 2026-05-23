@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x381899226c066a0262f45d6ab815f89818e0874ec3e66cdf72b5e92d8db4680",
-    "address": "0x4daaa14da9ebdbb86fd71eb78013e01f28ec3dbb2b7a4b3f7eca89d6ccb1d3f",
-    "seed": "gravenhold_slot_v1",
+    "address": "0x5ad6f95b76aaedbb92041a3e65fe116883c38327c6b966e93b31f58bd5aa799",
+    "seed": "gravenhold_slot_v2",
     "name": "Gravenhold Slot",
     "entrypoints": [
       "uuid",
@@ -33,14 +33,15 @@
   },
   "contracts": [
     {
-      "address": "0xea18b649aa866ba78d59cab478e83551a532054705c3a034344f9df067e65e",
-      "class_hash": "0x3f4332c5206f6b25609d294995ffcb882528aa2c3e889274b9fb4fef4e74232",
+      "address": "0x59d020105757364e5516c64c07714d42a45429ba28dedf8b1fc048923a32ef5",
+      "class_hash": "0x6bd552fc1930b5c06ab1538468eaa93c86c36e4e86b77ad5daef6c307d71600",
       "init_calldata": [],
       "tag": "gravenhold-actions",
       "selector": "0x1928f9abdca1244a8dde143aee0a6063d50abe8fba5271c16529f1a0b02cc88",
       "systems": [
         "start_run",
         "choose_option",
+        "assign_stat_point",
         "choose_reward",
         "equip_item",
         "upgrade"
@@ -80,6 +81,21 @@
         },
         {
           "name": "max_health",
+          "type": "core::integer::u16",
+          "key": false
+        },
+        {
+          "name": "xp_level",
+          "type": "core::integer::u16",
+          "key": false
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u16",
+          "key": false
+        },
+        {
+          "name": "unspent_stat_points",
           "type": "core::integer::u16",
           "key": false
         },
@@ -144,7 +160,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x5b9add54358c6f3971f6c8f545362b521efbc806a692b17e43ccb05f4627e1e",
+      "class_hash": "0x18fede2da367143a7fee5693e913cd36cd2910863102aa14189aab28b48cad1",
       "tag": "gravenhold-Character",
       "selector": "0x44576f2160791273694167207a9c0e4d6a0339feff9995621d3396db40f31a3"
     },
@@ -221,8 +237,18 @@
           "key": false
         },
         {
-          "name": "stat_gain",
+          "name": "xp_gain",
           "type": "core::integer::u16",
+          "key": false
+        },
+        {
+          "name": "xp_level_after",
+          "type": "core::integer::u16",
+          "key": false
+        },
+        {
+          "name": "leveled_up",
+          "type": "core::bool",
           "key": false
         },
         {
@@ -246,7 +272,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x1ef369a303dc641957a5bd368d50d38526974c0b976534be325d69527492c3a",
+      "class_hash": "0x47c853deb8decb6943f9da51bb24e906bd512052d0437c56851d7c6d7bbcc89",
       "tag": "gravenhold-ChoiceLog",
       "selector": "0xc7b9265d185acefdd0f8f18d9e5ec8370055252794b9fa784dfff0722b608b"
     },
@@ -374,6 +400,11 @@
           "key": false
         },
         {
+          "name": "pending_phase",
+          "type": "core::integer::u8",
+          "key": false
+        },
+        {
           "name": "level",
           "type": "core::integer::u8",
           "key": false
@@ -404,7 +435,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x69b924c5237680eab5d55963de62715644403eeb0d53b40adfc7185abd1ec71",
+      "class_hash": "0x562de17393d31d0397044148d1321e360aaeddd86f3812b102b9ae1490c0ccf",
       "tag": "gravenhold-Run",
       "selector": "0x3cefed53d209d0e4bfdda090cf686a6c5c6c8c99ae6b50b52d4f7b18a9d9f5c"
     }
@@ -2264,6 +2295,18 @@
           "type": "core::integer::u16"
         },
         {
+          "name": "xp_level",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "unspent_stat_points",
+          "type": "core::integer::u16"
+        },
+        {
           "name": "strength",
           "type": "core::integer::u16"
         },
@@ -2323,6 +2366,18 @@
         },
         {
           "name": "max_health",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "xp_level",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "unspent_stat_points",
           "type": "core::integer::u16"
         },
         {
@@ -2416,10 +2471,6 @@
           "type": "core::bool"
         },
         {
-          "name": "stat_gain_on_success",
-          "type": "core::integer::u16"
-        },
-        {
           "name": "health_loss_on_failure",
           "type": "core::integer::u16"
         },
@@ -2466,10 +2517,6 @@
         {
           "name": "boss_support_damage_amount",
           "type": "core::integer::u16"
-        },
-        {
-          "name": "stat_gain_blocked_by_strain",
-          "type": "core::bool"
         }
       ]
     },
@@ -2534,8 +2581,16 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "stat_gain",
+          "name": "xp_gain",
           "type": "core::integer::u16"
+        },
+        {
+          "name": "xp_level_after",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "leveled_up",
+          "type": "core::bool"
         },
         {
           "name": "boss_encounter",
@@ -2608,8 +2663,16 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "stat_gain",
+          "name": "xp_gain",
           "type": "core::integer::u16"
+        },
+        {
+          "name": "xp_level_after",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "leveled_up",
+          "type": "core::bool"
         },
         {
           "name": "boss_encounter",
@@ -2858,6 +2921,10 @@
           "type": "core::integer::u8"
         },
         {
+          "name": "pending_phase",
+          "type": "core::integer::u8"
+        },
+        {
           "name": "level",
           "type": "core::integer::u8"
         },
@@ -2905,6 +2972,10 @@
         },
         {
           "name": "phase",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "pending_phase",
           "type": "core::integer::u8"
         },
         {
@@ -2998,6 +3069,22 @@
         {
           "type": "function",
           "name": "choose_option",
+          "inputs": [
+            {
+              "name": "run_id",
+              "type": "core::felt252"
+            },
+            {
+              "name": "stat",
+              "type": "core::integer::u8"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "assign_stat_point",
           "inputs": [
             {
               "name": "run_id",

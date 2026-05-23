@@ -18,8 +18,6 @@ KATANA_LOG="$LOG_DIR/katana.log"
 PID_FILE="$LOG_DIR/katana.pid"
 RPC="${STARKNET_RPC_URL:-http://localhost:5050}"
 NAMESPACE="gravenhold"
-DEFAULT_KATANA_ACCOUNT="0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
-DEFAULT_KATANA_PRIVATE_KEY="0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 
 command_or_asdf() {
   local name="$1"
@@ -96,12 +94,6 @@ if [[ -z "$ACCOUNT" || -z "$PRIVKEY" ]]; then
     fi
     sleep 0.25
   done
-fi
-
-if [[ -z "$ACCOUNT" || -z "$PRIVKEY" ]]; then
-  echo "Could not scrape account banner; using Katana seed-0 default account."
-  ACCOUNT="$DEFAULT_KATANA_ACCOUNT"
-  PRIVKEY="$DEFAULT_KATANA_PRIVATE_KEY"
 fi
 
 if [[ -z "$ACCOUNT" || -z "$PRIVKEY" ]]; then

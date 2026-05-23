@@ -5,13 +5,11 @@ import tseslint from "typescript-eslint";
 
 export default defineConfig([
   globalIgnores([
-    ".next/**",
     "build/**",
     "dist/**",
     "generated/**",
     "node_modules/**",
     "out/**",
-    "starknet_reference/**",
     "target/**",
   ]),
   js.configs.recommended,

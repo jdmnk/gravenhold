@@ -16,12 +16,6 @@ export const OPENROUTER_IMAGE_MODEL =
 export const IMAGE_QUALITY = process.env.IMAGE_QUALITY ?? "low";
 export const REQUEST_DELAY_MS = Number(process.env.IMAGE_REQUEST_DELAY_MS ?? 1200);
 export const MAX_CONCURRENCY = Number(process.env.IMAGE_MAX_CONCURRENCY ?? 1);
-export const PIXELLAB_API_BASE_URL = process.env.PIXELLAB_API_BASE_URL ?? "https://api.pixellab.ai/v2";
-export const PIXELLAB_API_TOKEN = process.env.PIXELLAB_API_TOKEN
-  ?? process.env.PIXELLAB_API_KEY
-  ?? "";
-export const PIXELLAB_POLL_INTERVAL_MS = Number(process.env.PIXELLAB_POLL_INTERVAL_MS ?? 2500);
-export const PIXELLAB_POLL_TIMEOUT_MS = Number(process.env.PIXELLAB_POLL_TIMEOUT_MS ?? 180000);
 
 export function requireOpenAiKey(): string {
   if (!OPENAI_API_KEY) {
@@ -35,13 +29,6 @@ export function requireOpenRouterKey(): string {
     throw new Error("OPENROUTER_API_KEY is not set. Add it to .env at the project root.");
   }
   return OPENROUTER_API_KEY;
-}
-
-export function requirePixellabToken(): string {
-  if (!PIXELLAB_API_TOKEN) {
-    throw new Error("PIXELLAB_API_TOKEN is not set. Add it to .env at the project root.");
-  }
-  return PIXELLAB_API_TOKEN;
 }
 
 function loadDotEnv(path: string) {

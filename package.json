@@ -2,12 +2,16 @@
   "name": "gravenhold",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.26.2",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "build:slot": "tsc --noEmit && vite build --mode slot",
     "start": "vite preview",
-    "lint": "eslint",
+    "lint": "eslint src scripts tests eslint.config.mjs vite.config.ts postcss.config.mjs",
     "test": "jiti tests/run-tests.ts",
     "type-check": "tsc --noEmit",
     "dojo:build": "PATH=\"$HOME/.asdf/shims:$PATH\" asdf exec sozo build",
@@ -20,7 +24,6 @@
     "generate:display-content": "jiti scripts/generate_rpg_content.ts",
     "generate:encounter-prompts": "jiti scripts/generate-assets/generate-encounter-background-prompts.ts",
     "generate:images": "jiti scripts/generate-assets/generate-images.ts",
-    "generate:pixellab-ui": "jiti scripts/generate-assets/generate-pixellab-ui.ts",
     "generate:transparent-items": "jiti scripts/generate-assets/generate-transparent-item-icons.ts",
     "generate:rpg-content": "npm run generate:display-content",
     "smoke:onchain-local": "jiti scripts/smoke_onchain_local.ts"
@@ -47,6 +50,7 @@
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9",
     "globals": "^17.6.0",
+    "jiti": "2.6.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "typescript-eslint": "^8.59.2",

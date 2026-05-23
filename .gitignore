@@ -14,19 +14,22 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
-
-# production
+# build output
 /build
 /dist
 /generated
 /target
 
-# misc
+# local editor / OS files
 .DS_Store
+.vscode/
+.idea/
+.codex/
+.agents/
+.playwright-mcp/
 *.pem
+*.key
+*.crt
 
 # debug
 npm-debug.log*
@@ -34,16 +37,20 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .dev/
+*.log
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
 !.env.example
 !.env.slot.example
-manifest_dev.json
+
+# Local Dojo manifests are machine-specific. The Slot manifest is public
+# deployment metadata and is intentionally tracked.
+manifest_*.json
+!manifest_slot.json
 
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts

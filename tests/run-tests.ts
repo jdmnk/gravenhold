@@ -15,7 +15,6 @@ import {
   generateRewardChoices,
   generateRunPlan,
   getBossReadiness,
-  getBuildIdentity,
   getChoiceForecast,
   getCurrentAct,
   getCurrentEncounter,
@@ -192,36 +191,6 @@ test("selects the strongest effective stat with stable tie behavior", () => {
   };
 
   assert.equal(getStrongestStat(character), "spirit");
-});
-
-test("identifies the current build from the strongest effective stat", () => {
-  const state = createInitialGame("build-identity");
-
-  assert.deepEqual(getBuildIdentity(state.character), {
-    archetype: "Warrior",
-    label: "Warrior path",
-    name: "Strength",
-    stat: "strength",
-  });
-
-  const charm: Item = {
-    bonuses: { spirit: 4 },
-    description: "A bright charm for focused will.",
-    id: "test_spirit_charm",
-    name: "Test Spirit Charm",
-    slot: "trinket",
-    tier: 1,
-  };
-  const character = {
-    ...state.character,
-    equipment: {
-      ...state.character.equipment,
-      trinket: charm,
-    },
-  };
-
-  assert.equal(getBuildIdentity(character).label, "Mystic path");
-  assert.equal(getBuildIdentity(character).stat, "spirit");
 });
 
 test("calculates act progress and next boss level", () => {

@@ -15,13 +15,6 @@ import {
   type StatId,
 } from "./types";
 
-export type BuildIdentity = {
-  stat: StatId;
-  name: string;
-  archetype: string;
-  label: string;
-};
-
 export type ActProgress = {
   act: number;
   label: string;
@@ -135,29 +128,6 @@ export type ChoiceForecast = {
   winsOnSuccess: boolean;
 };
 
-const buildIdentities: Record<StatId, Omit<BuildIdentity, "stat">> = {
-  agility: {
-    archetype: "Rogue",
-    label: "Rogue path",
-    name: "Agility",
-  },
-  intellect: {
-    archetype: "Strategist",
-    label: "Strategist path",
-    name: "Intellect",
-  },
-  spirit: {
-    archetype: "Mystic",
-    label: "Mystic path",
-    name: "Spirit",
-  },
-  strength: {
-    archetype: "Warrior",
-    label: "Warrior path",
-    name: "Strength",
-  },
-};
-
 const approachDifficultyModifiers: Record<EncounterOptionApproach, number> = {
   favored: -1,
   standard: 0,
@@ -256,16 +226,6 @@ export function getStrongestStat(character: Character): StatId {
   }
 
   return strongest;
-}
-
-export function getBuildIdentity(character: Character): BuildIdentity {
-  const stat = getStrongestStat(character);
-  const identity = buildIdentities[stat];
-
-  return {
-    ...identity,
-    stat,
-  };
 }
 
 export function getCurrentAct(state: GameState): ActProgress {

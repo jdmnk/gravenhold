@@ -1,7 +1,7 @@
 # Slot + Vercel Deployment Runbook
 
-This is the practical next-step runbook for deploying Gravenhold as a Vercel
-static frontend backed by a Cartridge Slot Katana world.
+Runbook for deploying Gravenhold as a Vercel static frontend backed by a
+Cartridge Slot Katana world.
 
 ## Command Matrix
 

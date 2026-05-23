@@ -44,8 +44,8 @@ yarn-error.log*
 !.env.example
 !.env.slot.example
 
-# Local Dojo manifests are machine-specific. The Slot manifest is intentionally
-# tracked as public deployment metadata, matching the Zordle reference pattern.
+# Local Dojo manifests are machine-specific. The Slot manifest is public
+# deployment metadata and is intentionally tracked.
 manifest_*.json
 !manifest_slot.json
 

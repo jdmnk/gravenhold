@@ -10,7 +10,6 @@ export default defineConfig([
     "generated/**",
     "node_modules/**",
     "out/**",
-    "starknet_reference/**",
     "target/**",
   ]),
   js.configs.recommended,

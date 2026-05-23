@@ -5,7 +5,7 @@ Cairo, Starknet, and a Vite React client. The player pushes through a 20-level
 path, resolves stat-based encounters, earns XP, assigns stat points, equips
 build-defining gear, and defeats boss gates by committing to a clear playstyle.
 
-The game is currently local-onchain first: Cairo/Dojo owns gameplay state and
+Gravenhold runs as a local-onchain game: Cairo/Dojo owns gameplay state and
 rules, while the React client displays decoded chain state and submits player
 transactions.
 

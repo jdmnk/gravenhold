@@ -5,7 +5,6 @@ import tseslint from "typescript-eslint";
 
 export default defineConfig([
   globalIgnores([
-    ".next/**",
     "build/**",
     "dist/**",
     "generated/**",

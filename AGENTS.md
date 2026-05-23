@@ -2,7 +2,7 @@
 
 ## Current Game Direction
 
-Gravenhold is currently a deterministic single-player progression RPG. The player moves through a 20-level path, resolves 3 encounters per level, grows through repeated stat-based choices, earns item rewards, equips build-defining gear, and defeats boss gates by committing to a clear playstyle.
+Gravenhold is a deterministic single-player progression RPG. The player moves through a 20-level path, resolves 3 encounters per level, grows through repeated stat-based choices, earns item rewards, equips build-defining gear, and defeats boss gates by committing to a clear playstyle.
 
 The current design baseline is documented in `docs/new-rpg-doc.md`.
 
@@ -18,20 +18,20 @@ The current design baseline is documented in `docs/new-rpg-doc.md`.
 
 ## Code Architecture Principles
 
-- Gravenhold is now a Vite + Dojo local-onchain game. Do not add Next.js code or `NEXT_PUBLIC_*` env vars.
+- Gravenhold is a Vite + Dojo local-onchain game. Use `VITE_*` env vars for client runtime configuration.
 - Cairo/Dojo is the gameplay source of truth. Game state transitions, success checks, XP gains, stat point allocation, damage, rewards, equipment rules, deterministic randomness, and rule-bearing content live under `contracts/src`.
 - React components display decoded chain state and submit transactions. They must not decide success, damage, XP gain, stat point allocation, rewards, boss behavior, progression, or equipment effects.
-- Runtime client code must not import `src/lib/rpg/*`. The old TypeScript RPG engine may remain only as temporary legacy simulation/reference code until Cairo tests replace it.
+- Runtime client code must not import `src/lib/rpg/*`. Those modules are reserved for tests and content tooling.
 - Rule-bearing content is in `contracts/src/content/data.cairo`. TypeScript content under `src/lib/rpgContent` is display-only copy keyed by Cairo numeric IDs.
 - Prefer Dojo-generated TypeScript bindings from `sozo build --typescript` as client/contract integration grows. Avoid hand-maintained TS mirrors of Cairo models and calls where generated bindings are practical.
 - Keep deterministic randomness centralized in Cairo. Do not call `Math.random()` for gameplay.
 - Model decoded chain state explicitly with TypeScript types in `src/lib/chain`.
-- When changing gameplay or balance, add or update Cairo tests first. TypeScript simulation tests are legacy guardrails, not the long-term authority.
+- When changing gameplay or balance, add or update Cairo tests first. TypeScript simulation tests are secondary guardrails.
 
 ## Testing And Verification
 
 - Run `npm run dojo:build` and `npm run dojo:test` after contract, content, or balance changes.
-- Run `npm run test` after changing TypeScript tooling, display content, or legacy simulation guardrails.
+- Run `npm run test` after changing TypeScript tooling, display content, or simulation guardrails.
 - Run `npm run lint` and `pnpm build` after UI or exported API changes.
 - Run `npm run dev:chain`, `npm run smoke:onchain-local`, and `npm run dev:frontend` when verifying the local onchain flow.
 - If a design rule changes, update the gameplay docs and Cairo tests together.

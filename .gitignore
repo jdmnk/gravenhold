@@ -14,10 +14,6 @@
 # testing
 /coverage
 
-# framework build caches
-/.next/
-/out/
-
 # build output
 /build
 /dist
@@ -58,4 +54,3 @@ manifest_*.json
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts

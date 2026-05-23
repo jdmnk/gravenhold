@@ -59,7 +59,7 @@ Each focused archetype should be viable.
 - Rule-bearing content lives under `contracts/src`.
 - React displays decoded chain state and submits transactions.
 - Runtime client code must not import `src/lib/rpg/*`.
-- TypeScript RPG code is legacy simulation/reference only until replaced by Cairo tests.
+- TypeScript RPG code supports simulation tests and content tooling.
 - TypeScript content in `src/lib/rpgContent` is display copy keyed by Cairo numeric IDs.
 
 ## New Mechanics Plan
@@ -105,7 +105,7 @@ Strained approach failure also adds 1 extra health loss.
 
 ### XP And Stat Points
 
-Encounter choices no longer raise base stats automatically. Each resolved encounter grants XP:
+Encounter choices grant XP instead of raising base stats directly:
 
 ```txt
 normal encounter XP = 5 + path level

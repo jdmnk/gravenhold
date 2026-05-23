@@ -1053,14 +1053,14 @@ test("summarizes evenly mixed play separately from focused builds", () => {
   assert.ok(summary.winRate < 1);
 });
 
-test("keeps runtime client imports out of legacy TS RPG modules", () => {
+test("keeps runtime client imports out of TS RPG simulation modules", () => {
   const root = resolve(__dirname, "..");
   const sourceRoot = resolve(root, "src");
   const checkedFiles = listSourceFiles(sourceRoot)
     .filter((filePath) => !relative(sourceRoot, filePath).startsWith("lib/rpg/"));
   const violations = checkedFiles.filter((filePath) => {
     const source = readFileSync(filePath, "utf8");
-    return importsLegacyRpg(source);
+    return importsSimulationRpg(source);
   });
 
   assert.deepEqual(
@@ -1080,7 +1080,7 @@ function listSourceFiles(directory: string): string[] {
   });
 }
 
-function importsLegacyRpg(source: string): boolean {
+function importsSimulationRpg(source: string): boolean {
   return /(?:from|import)\s+(?:type\s+)?(?:[^"']*?\s+from\s+)?["']@\/lib\/rpg(?:\/|["'])/.test(source)
     || /(?:from|import)\s+(?:type\s+)?(?:[^"']*?\s+from\s+)?["'](?:\.\.\/)+rpg(?:\/|["'])/.test(source)
     || /(?:from|import)\s+(?:type\s+)?(?:[^"']*?\s+from\s+)?["']\.\/lib\/rpg(?:\/|["'])/.test(source);

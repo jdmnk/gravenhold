@@ -1627,7 +1627,7 @@ function statIconFor(stat: StatId): string {
     case "strength":
       return "/assets/game/ui/str-icon.png";
     case "intellect":
-      return "/assets/game/ui/generated/intelect3.png";
+      return "/assets/game/ui/intellect-icon.png";
     case "agility":
       return "/assets/game/ui/agi-icon.png";
     case "spirit":

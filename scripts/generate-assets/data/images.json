@@ -1,33 +1,6 @@
 {
   "backgrounds": [
     {
-      "id": "fallen-gate",
-      "filename": "fallen-gate.webp",
-      "category": "backgrounds",
-      "size": "1536x1024",
-      "format": "webp",
-      "description": "a ruined stone gate blocking a muddy valley road after cold rain, mossy stones, warped iron bars, distant hills, torch-warm highlights in a grey-green wilderness",
-      "intendedUse": "level-one encounter backdrop for The Fallen Gate"
-    },
-    {
-      "id": "mudslide-path",
-      "filename": "mudslide-path.webp",
-      "category": "backgrounds",
-      "size": "1536x1024",
-      "format": "webp",
-      "description": "a steep hillside path turned to sliding mud by heavy rain, broken roots, slick stones, low mist, muted brown and green terrain, narrow dangerous passage",
-      "intendedUse": "early survival encounter backdrop"
-    },
-    {
-      "id": "guardian-scouts",
-      "filename": "guardian-scouts.webp",
-      "category": "backgrounds",
-      "size": "1536x1024",
-      "format": "webp",
-      "description": "a tense clearing before a stone guardian outpost, crude watchfires, shield-marked standing stones, distant scout silhouettes implied by shadows only",
-      "intendedUse": "hard enemy encounter backdrop"
-    },
-    {
       "id": "level-cleared",
       "filename": "level-cleared.webp",
       "category": "backgrounds",

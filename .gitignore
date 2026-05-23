@@ -14,7 +14,7 @@
 # testing
 /coverage
 
-# next.js
+# framework build caches
 /.next/
 /out/
 

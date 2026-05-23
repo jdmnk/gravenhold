@@ -84,7 +84,7 @@ slot deployments accounts gravenhold-slot katana
 
 SLOT_NAME=gravenhold-slot \
 SLOT_ACCOUNT_ADDRESS=0x... \
-SLOT_PRIVATE_KEY=0x... \
+SLOT_PRIVATE_KEY=<slot-private-key> \
 scripts/deploy_slot.sh
 ```
 
@@ -143,9 +143,5 @@ Before publishing or rotating deployments:
 - Treat committed manifests as public deployment metadata only.
 - Rotate any credential that was ever committed or shared outside the local
   machine.
-- Enable GitHub secret scanning, Dependabot alerts, and branch protection in
-  the GitHub repository settings.
-
-## License
-
-MIT. See [LICENSE](./LICENSE).
+- Enable GitHub secret scanning and branch protection in the GitHub repository
+  settings.

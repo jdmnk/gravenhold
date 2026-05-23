@@ -25,7 +25,7 @@ slot deployments accounts gravenhold-slot katana
 
 SLOT_NAME=gravenhold-slot \
 SLOT_ACCOUNT_ADDRESS=0x... \
-SLOT_PRIVATE_KEY=0x... \
+SLOT_PRIVATE_KEY=<slot-private-key> \
 scripts/deploy_slot.sh
 
 pnpm dev:slot
@@ -105,7 +105,7 @@ Run the Slot deploy script with the account returned by Slot:
 ```bash
 SLOT_NAME=gravenhold-slot \
 SLOT_ACCOUNT_ADDRESS=0x... \
-SLOT_PRIVATE_KEY=0x... \
+SLOT_PRIVATE_KEY=<slot-private-key> \
 scripts/deploy_slot.sh
 ```
 

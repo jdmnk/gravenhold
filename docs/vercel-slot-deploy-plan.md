@@ -128,7 +128,7 @@ Inputs:
 ```bash
 SLOT_NAME=gravenhold-slot
 SLOT_ACCOUNT_ADDRESS=0x...
-SLOT_PRIVATE_KEY=0x...
+SLOT_PRIVATE_KEY=<slot-private-key>
 ```
 
 Flow:

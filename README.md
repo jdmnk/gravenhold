@@ -24,16 +24,9 @@ manifest_slot.json  Public Slot deployment manifest
 contract, ABI, and model metadata for the shared Slot deployment. Local manifests
 such as `manifest_dev.json` are machine-specific and ignored.
 
-## Prerequisites
+## Setup
 
-Versions are pinned in [`.tool-versions`](./.tool-versions):
-
-- Node 20+
-- pnpm 10
-- scarb 2.15.1
-- sozo 1.8.6
-- starknet-foundry 0.55.0
-- starkli 0.4.2
+Tool versions are pinned in [`.tool-versions`](./.tool-versions).
 
 Install JavaScript dependencies:
 

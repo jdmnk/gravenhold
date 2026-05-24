@@ -1575,7 +1575,7 @@ img {
 
 .history-panel {
   max-height: 160px;
-  padding: 10px;
+  padding: 14px 10px;
   overflow: auto;
 }
 

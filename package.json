@@ -36,7 +36,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "ai": "^6.0.168",
     "openai": "^6.34.0",
-    "react": "19.2.4",
+    "react": "19.2.6",
     "react-dom": "19.2.4",
     "starknet": "^10.0.2",
     "zod": "^4.3.6"

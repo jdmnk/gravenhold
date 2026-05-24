@@ -1,28 +1,34 @@
 # Gravenhold
 
-Gravenhold is a deterministic single-player progression RPG built with Dojo,
-Cairo, Starknet, and a Vite React client. The player pushes through a 20-level
-path, resolves stat-based encounters, earns XP, assigns stat points, equips
-build-defining gear, and defeats boss gates by committing to a clear playstyle.
+An onchain fantasy RPG where every choice carves your path through Gravenhold.
 
-Gravenhold runs as a local-onchain game: Cairo/Dojo owns gameplay state and
-rules, while the React client displays decoded chain state and submits player
-transactions.
+You push through a 20-level path of encounters, earn XP, assign stat points,
+equip build-defining gear, and face boss gates that test the character you have
+been shaping. Strength, Intellect, Agility, and Spirit each offer a different
+way through the same hostile road.
+
+The game runs on Starknet using Dojo and Cairo for onchain gameplay logic, with
+a Vite React client for the playable interface.
+
+## Screenshots
+
+<p>
+  <img src="docs/screenshots/intro.webp" alt="Gravenhold intro screen" width="49%">
+  <img src="docs/screenshots/gameplay1.webp" alt="Gravenhold encounter screen" width="49%">
+  <img src="docs/screenshots/gameplay2.webp" alt="Gravenhold progression screen" width="49%">
+  <img src="docs/screenshots/gameplay3.webp" alt="Gravenhold rewards screen" width="49%">
+</p>
 
 ## Project Layout
 
-```text
-contracts/          Cairo / Dojo gameplay source of truth
-src/                Vite React client and chain-state decoding
-scripts/            Local chain, deployment, smoke-test, and asset scripts
-docs/               Game design, deployment, and art-direction notes
-public/assets/      Game art, UI textures, fonts, audio, and generated assets
-manifest_slot.json  Public Slot deployment manifest
-```
+- `contracts/` - Dojo and Cairo gameplay logic.
+- `src/` - Vite React client and chain-state decoding.
+- `scripts/` - local chain, deployment, smoke-test, and asset utilities.
+- `public/assets/` - game art, UI textures, fonts, and audio.
 
-`manifest_slot.json` is intentionally committed. It contains public world,
-contract, ABI, and model metadata for the shared Slot deployment. Local manifests
-such as `manifest_dev.json` are machine-specific and ignored.
+`manifest_slot.json` is public Slot deployment metadata and is intentionally
+committed. Local manifests such as `manifest_dev.json` are machine-specific and
+ignored.
 
 ## Prerequisites
 

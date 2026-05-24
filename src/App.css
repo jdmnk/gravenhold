@@ -131,9 +131,9 @@ img {
   display: grid;
   justify-items: center;
   width: min(1160px, calc(100vw - 32px));
-  min-height: min(760px, calc(100vh - 32px));
+  min-height: 100%;
   margin: 0 auto;
-  align-content: end;
+  align-content: center;
   gap: 12px;
   overflow: hidden;
   padding: clamp(32px, 6vw, 84px);
@@ -147,6 +147,10 @@ img {
 .start-screen > :not(.scene-fx, .intro-meta) {
   position: relative;
   z-index: 1;
+}
+
+.start-screen > :not(.scene-fx, .intro-meta, .network-line) {
+  transform: translateY(-20px);
 }
 
 .start-screen > .scene-fx {

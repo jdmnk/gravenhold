@@ -1167,22 +1167,6 @@ function canLearnSkill(
   );
 }
 
-function getSkillRequirementText(skillId: SkillId): string {
-  const skill = skillText[skillId];
-  const statRequirements = statIds
-    .map((stat) => {
-      const value = skill.requiredStats?.[stat] ?? 0;
-      return value > 0 ? `${statShortLabels[stat]} ${value}` : null;
-    })
-    .filter(Boolean);
-  const prerequisite = skillPrerequisites[skillId];
-  const requirements = [
-    prerequisite ? skillText[prerequisite].label : null,
-    ...statRequirements,
-  ].filter(Boolean);
-  return requirements.length > 0 ? requirements.join(", ") : "Starter";
-}
-
 function getStatGrowthDescription(stat: StatId): string {
   switch (stat) {
     case "strength":
@@ -1194,6 +1178,46 @@ function getStatGrowthDescription(stat: StatId): string {
     case "spirit":
       return "Resolve, recovery, fear resistance, and mystic pressure.";
   }
+}
+
+function SkillRequirementList({ skillId }: { skillId: SkillId }) {
+  const skill = skillText[skillId];
+  const prerequisite = skillPrerequisites[skillId];
+  const statRequirements = statIds
+    .map((stat) => {
+      const value = skill.requiredStats?.[stat] ?? 0;
+      return value > 0 ? { stat, value } : null;
+    })
+    .filter((requirement): requirement is { stat: StatId; value: number } =>
+      Boolean(requirement),
+    );
+
+  if (!prerequisite && statRequirements.length === 0) {
+    return <span>Starter</span>;
+  }
+
+  return (
+    <>
+      {prerequisite ? (
+        <span className="skill-prerequisite">{skillText[prerequisite].label}</span>
+      ) : null}
+      {statRequirements.map((requirement) => (
+        <StatChip
+          key={requirement.stat}
+          stat={requirement.stat}
+          value={requirement.value}
+        />
+      ))}
+    </>
+  );
+}
+
+function StatChip({ stat, value }: { stat: StatId; value?: number }) {
+  return (
+    <span className={`stat-chip stat-tone ${statClass(stat)}`}>
+      {statShortLabels[stat]}{value === undefined ? "" : ` ${value}`}
+    </span>
+  );
 }
 
 function GrowthPanel({
@@ -1260,7 +1284,7 @@ function GrowthPanel({
         </div>
       </header>
 
-      <div className="stat-allocation-list">
+      <div className="stat-allocation-list growth-stat-grid">
         {statIds.map((stat) => (
           <article
             className={`stat-allocation-row stat-growth-row stat-tone ${statClass(stat)}`}
@@ -1312,7 +1336,7 @@ function GrowthPanel({
         ))}
       </div>
 
-      <div className="stat-allocation-list skill-growth-list">
+      <div className="stat-allocation-list skill-growth-list skill-growth-grid">
         {skills.map((skillId) => {
           const skill = skillText[skillId];
           const unlocked = isSkillUnlocked(
@@ -1356,15 +1380,16 @@ function GrowthPanel({
                 </div>
                 <div>
                   <dt>Stat</dt>
-                  <dd>
-                    {skill.bridgeStat
-                      ? `${statShortLabels[skill.stat]} + ${statShortLabels[skill.bridgeStat]}`
-                      : statLabels[skill.stat]}
+                  <dd className="stat-chip-list">
+                    <StatChip stat={skill.stat} />
+                    {skill.bridgeStat ? <StatChip stat={skill.bridgeStat} /> : null}
                   </dd>
                 </div>
                 <div>
                   <dt>Requires</dt>
-                  <dd>{getSkillRequirementText(skillId)}</dd>
+                  <dd className="stat-requirement-list">
+                    <SkillRequirementList skillId={skillId} />
+                  </dd>
                 </div>
               </dl>
               <button

@@ -131,9 +131,9 @@ img {
   display: grid;
   justify-items: center;
   width: min(1160px, calc(100vw - 32px));
-  min-height: min(760px, calc(100vh - 32px));
+  min-height: 100%;
   margin: 0 auto;
-  align-content: end;
+  align-content: center;
   gap: 12px;
   overflow: hidden;
   padding: clamp(32px, 6vw, 84px);
@@ -147,6 +147,10 @@ img {
 .start-screen > :not(.scene-fx, .intro-meta) {
   position: relative;
   z-index: 1;
+}
+
+.start-screen > :not(.scene-fx, .intro-meta, .network-line) {
+  transform: translateY(-20px);
 }
 
 .start-screen > .scene-fx {
@@ -789,8 +793,7 @@ img {
   fill: #604631;
 }
 
-.pending-panel,
-.notice-panel {
+.pending-panel {
   border: 2px solid #5b402b;
   background: rgba(20, 14, 11, 0.92);
 }
@@ -1575,7 +1578,7 @@ img {
 
 .history-panel {
   max-height: 160px;
-  padding: 10px;
+  padding: 14px 10px;
   overflow: auto;
 }
 
@@ -1733,23 +1736,6 @@ img {
 
 .history-panel li {
   overflow-wrap: anywhere;
-}
-
-.notice-panel {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 5;
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 8px;
-  align-items: center;
-  max-width: min(760px, calc(100vw - 36px));
-  padding: 10px;
-}
-
-.notice-panel p {
-  color: #f1d6aa;
 }
 
 @media (max-width: 1260px) {
@@ -1920,13 +1906,6 @@ img {
   .reward-art,
   .complete-art {
     min-height: 216px;
-  }
-
-  .notice-panel {
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    grid-template-columns: 1fr;
   }
 
   .how-it-works-backdrop {

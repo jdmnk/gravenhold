@@ -11,6 +11,7 @@ import {
 
 import { SceneEffectsLayer } from "@/components/fx/SceneEffectsLayer";
 import { HowItWorksDialog } from "@/components/onboarding/HowItWorksDialog";
+import { Toast, type ToastMessage } from "@/components/ui/Toast";
 import {
   createGameSession,
   type GameSession,
@@ -119,8 +120,11 @@ export default function Home() {
   const [connectingSession, setConnectingSession] = useState(false);
   const [bundle, setBundle] = useState<RunBundle | null>(null);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(connection.error);
+  const [toast, setToast] = useState<ToastMessage | null>(() =>
+    connection.error ? errorToast(connection.error) : null,
+  );
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const dismissToast = useCallback(() => setToast(null), []);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const [hasSeenHowItWorks, setHasSeenHowItWorks] = useState(() =>
     hasSeenHowItWorksIntro(),
@@ -155,14 +159,14 @@ export default function Home() {
     if (session) return session;
     if (!network || connectingSession) return null;
     setConnectingSession(true);
-    setNotice(null);
+    setToast(null);
 
     try {
       const nextSession = await createGameSession(network);
       setSession(nextSession);
       return nextSession;
     } catch (error) {
-      setNotice(formatError(error));
+      setToast(errorToast(formatError(error)));
       setInitialLoadComplete(true);
       return null;
     } finally {
@@ -228,7 +232,7 @@ export default function Home() {
         }
       } catch (error) {
         if (!cancelled) {
-          setNotice(formatError(error));
+          setToast(errorToast(formatError(error)));
           setInitialLoadComplete(true);
         }
       }
@@ -248,12 +252,12 @@ export default function Home() {
     if (busy) return;
     setBusy(true);
     setPendingAction(nextPendingAction);
-    setNotice(null);
+    setToast(null);
 
     try {
       await action();
     } catch (error) {
-      setNotice(formatError(error));
+      setToast(errorToast(formatError(error)));
     } finally {
       setBusy(false);
       setPendingAction(null);
@@ -270,7 +274,7 @@ export default function Home() {
         : createRunSeed(network);
       await startRun(network, activeSession.signer, seed);
       await loadActive(network, activeSession);
-      setNotice("Onchain run started.");
+      setToast({ message: "Onchain run started." });
     });
   }
 
@@ -342,7 +346,7 @@ export default function Home() {
     setHasSeenHowItWorks(true);
     setHowItWorksOpen(false);
     setPendingAction(null);
-    setNotice(null);
+    setToast(null);
     setInitialLoadComplete(true);
     setBundle(null);
   }
@@ -391,8 +395,12 @@ export default function Home() {
           onOpenChange={handleHowItWorksOpenChange}
         />
 
-        {notice ? (
-          <PlainNotice message={notice} onDismiss={() => setNotice(null)} />
+        {toast ? (
+          <Toast
+            autoDismissMs={toast.autoDismissMs}
+            message={toast.message}
+            onDismiss={dismissToast}
+          />
         ) : null}
       </main>
     </Tooltip.Provider>
@@ -488,38 +496,6 @@ function StartPanel({
           How it works
         </button>
       </form>
-    </section>
-  );
-}
-
-function PlainNotice({
-  message,
-  onDismiss,
-}: {
-  message: string;
-  onDismiss: () => void;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard?.writeText(message);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1200);
-    } catch {
-      setCopied(false);
-    }
-  }
-
-  return (
-    <section aria-label="Notice" className="notice-panel">
-      <p>{message}</p>
-      <button onClick={handleCopy} type="button">
-        {copied ? "Copied" : "Copy"}
-      </button>
-      <button onClick={onDismiss} type="button">
-        Dismiss
-      </button>
     </section>
   );
 }
@@ -1928,6 +1904,13 @@ function shortAddress(address: string): string {
 function formatError(error: unknown): string {
   if (error instanceof Error) return error.message;
   return "Unexpected error.";
+}
+
+function errorToast(message: string): ToastMessage {
+  return {
+    autoDismissMs: 8000,
+    message,
+  };
 }
 
 function stringifyBigInt(_key: string, value: unknown) {

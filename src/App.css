@@ -1185,6 +1185,53 @@ img {
     url("/assets/game/ui/bg-dark.png") center / 120px;
 }
 
+.skill-growth-row.is-known {
+  border-color: #8e7b3e;
+  border-left-color: #e1c661;
+  background:
+    linear-gradient(rgba(33, 30, 16, 0.88), rgba(12, 10, 7, 0.96)),
+    url("/assets/game/ui/bg-dark.png") center / 120px;
+}
+
+.skill-growth-row.is-known button {
+  border-color: #b49c56;
+  color: #ffe3a3;
+  background: rgba(77, 65, 28, 0.56);
+}
+
+.skill-growth-row.is-locked {
+  border-color: #34271f;
+  border-left-color: #34271f;
+  color: #8a7160;
+  background:
+    linear-gradient(rgba(15, 11, 9, 0.84), rgba(8, 7, 6, 0.96)),
+    url("/assets/game/ui/bg-dark.png") center / 120px;
+}
+
+.skill-growth-row.is-locked .stat-icon {
+  filter: grayscale(1);
+  opacity: 0.42;
+}
+
+.skill-growth-row.is-locked h3,
+.skill-growth-row.is-locked p,
+.skill-growth-row.is-locked dt,
+.skill-growth-row.is-locked dd {
+  color: #806958;
+}
+
+.skill-growth-row.is-locked .stat-chip {
+  border-color: #4a3c32;
+  color: #9b806c;
+  background: rgba(12, 9, 8, 0.44);
+}
+
+.skill-growth-row.is-locked button {
+  border-color: #4a3c32;
+  color: #8a7160;
+  background: rgba(12, 9, 8, 0.62);
+}
+
 .stat-allocation-topline {
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr);

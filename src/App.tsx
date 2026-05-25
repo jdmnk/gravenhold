@@ -1356,10 +1356,17 @@ function GrowthPanel({
           const selected = selectedSkill === skillId;
           const pending =
             pendingAction?.kind === "growth" && pendingAction.skillId === skillId;
+          const skillStateClass = unlocked
+            ? " is-known"
+            : !canLearn
+              ? " is-locked"
+              : selected
+                ? " is-selected"
+                : " is-available";
 
           return (
             <article
-              className={`stat-allocation-row skill-growth-row stat-tone ${statClass(skill.stat)}${selected ? " is-selected" : ""}`}
+              className={`stat-allocation-row skill-growth-row stat-tone ${statClass(skill.stat)}${skillStateClass}`}
               key={skillId}
             >
               <div className="stat-allocation-topline">

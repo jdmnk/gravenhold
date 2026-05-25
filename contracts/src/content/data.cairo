@@ -54,6 +54,16 @@ pub fn class_starting_skill(class_id: u8) -> u16 {
     }
 }
 
+pub fn class_second_starting_skill(class_id: u8) -> u16 {
+    match class_id {
+        0 => 2,
+        1 => 6,
+        2 => 10,
+        3 => 14,
+        _ => 0,
+    }
+}
+
 pub fn skill_class(skill_id: u16) -> u8 {
     match skill_id {
         1 => CLASS_VANGUARD,
@@ -100,16 +110,12 @@ pub fn skill_stat(skill_id: u16) -> u8 {
 
 pub fn skill_prerequisite(skill_id: u16) -> u16 {
     match skill_id {
-        2 => 1,
         3 => 2,
         4 => 3,
-        6 => 5,
         7 => 6,
         8 => 7,
-        10 => 9,
         11 => 10,
         12 => 11,
-        14 => 13,
         15 => 14,
         16 => 15,
         _ => 0,
@@ -118,7 +124,6 @@ pub fn skill_prerequisite(skill_id: u16) -> u16 {
 
 pub fn skill_required_strength(skill_id: u16) -> u16 {
     match skill_id {
-        2 => 4,
         3 => 5,
         4 => 4,
         12 => 3,
@@ -129,7 +134,6 @@ pub fn skill_required_strength(skill_id: u16) -> u16 {
 
 pub fn skill_required_intellect(skill_id: u16) -> u16 {
     match skill_id {
-        6 => 4,
         7 => 5,
         8 => 4,
         12 => 3,
@@ -140,7 +144,6 @@ pub fn skill_required_intellect(skill_id: u16) -> u16 {
 pub fn skill_required_agility(skill_id: u16) -> u16 {
     match skill_id {
         8 => 3,
-        10 => 4,
         11 => 5,
         12 => 4,
         _ => 0,
@@ -150,7 +153,6 @@ pub fn skill_required_agility(skill_id: u16) -> u16 {
 pub fn skill_required_spirit(skill_id: u16) -> u16 {
     match skill_id {
         4 => 3,
-        14 => 4,
         15 => 5,
         16 => 4,
         _ => 0,
@@ -1088,5 +1090,13 @@ mod tests {
         assert_eq!(skill_required_agility(12), 4);
         assert_eq!(skill_required_intellect(12), 3);
         assert_eq!(skill_bridge_stat(12), STAT_INTELLECT);
+    }
+
+    #[test]
+    fn test_survival_starter_skills_have_no_gate() {
+        assert_eq!(skill_required_strength(2), 0);
+        assert_eq!(skill_required_intellect(6), 0);
+        assert_eq!(skill_required_agility(10), 0);
+        assert_eq!(skill_required_spirit(14), 0);
     }
 }

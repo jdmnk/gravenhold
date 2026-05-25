@@ -3,12 +3,22 @@ use crate::constants::{
     PHASE_ENCOUNTER, STARTING_HEALTH, STARTING_STAT, STARTING_XP, STARTING_XP_LEVEL,
     STATUS_PLAYING,
 };
-use crate::content::data::class_starting_skill;
+use crate::content::data::{class_second_starting_skill, class_starting_skill};
 pub use crate::models::index::{Character, Run};
 
 pub mod Errors {
     pub const NOT_FOUND: felt252 = 'Run: not found';
     pub const NOT_OWNER: felt252 = 'Run: not owner';
+}
+
+fn skill_mask(skill_id: u16) -> u64 {
+    let mut mask: u64 = 1;
+    let mut cursor: u16 = 1;
+    while cursor < skill_id {
+        mask *= 2;
+        cursor += 1;
+    }
+    mask
 }
 
 #[generate_trait]
@@ -47,16 +57,14 @@ pub impl RunImpl of RunTrait {
 #[generate_trait]
 pub impl CharacterImpl of CharacterTrait {
     fn new(run_id: felt252, class_id: u8) -> Character {
-        let starting_skill = class_starting_skill(class_id);
         let mut unlocked_skills_bits: u64 = 0;
+        let starting_skill = class_starting_skill(class_id);
         if starting_skill > 0 {
-            let mut mask: u64 = 1;
-            let mut cursor: u16 = 1;
-            while cursor < starting_skill {
-                mask *= 2;
-                cursor += 1;
-            }
-            unlocked_skills_bits = mask;
+            unlocked_skills_bits += skill_mask(starting_skill);
+        }
+        let second_starting_skill = class_second_starting_skill(class_id);
+        if second_starting_skill > 0 {
+            unlocked_skills_bits += skill_mask(second_starting_skill);
         }
 
         Character {
@@ -102,7 +110,7 @@ mod tests {
         assert_eq!(character.xp, STARTING_XP);
         assert_eq!(character.skill_points, 0);
         assert_eq!(character.stat_points, 0);
-        assert_eq!(character.unlocked_skills_bits, 1);
+        assert_eq!(character.unlocked_skills_bits, 3);
         assert_eq!(character.strength, STARTING_STAT);
         assert_eq!(character.intellect, STARTING_STAT);
         assert_eq!(character.agility, STARTING_STAT);
@@ -115,5 +123,18 @@ mod tests {
         assert_eq!(character.armor_item_id, 0);
         assert_eq!(character.trinket_item_id, 0);
         assert_eq!(character.inventory_bits, 0);
+    }
+
+    #[test]
+    fn test_every_class_starts_with_two_skills() {
+        let vanguard = CharacterTrait::new(1, 0);
+        let scholar = CharacterTrait::new(2, 1);
+        let shade = CharacterTrait::new(3, 2);
+        let oracle = CharacterTrait::new(4, 3);
+
+        assert_eq!(vanguard.unlocked_skills_bits, 3);
+        assert_eq!(scholar.unlocked_skills_bits, 48);
+        assert_eq!(shade.unlocked_skills_bits, 768);
+        assert_eq!(oracle.unlocked_skills_bits, 12288);
     }
 }

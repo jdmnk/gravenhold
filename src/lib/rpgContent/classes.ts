@@ -72,7 +72,6 @@ export const skillText: Record<SkillId, SkillText> = {
     description: "Take the harder angle, but blunt the cost if it fails.",
     id: "brace",
     label: "Brace",
-    requiredStats: { strength: 4 },
     stat: "strength",
     tier: 1,
   },
@@ -117,7 +116,6 @@ export const skillText: Record<SkillId, SkillText> = {
     description: "Choose the slower route and reduce the harm of failure.",
     id: "mend_will",
     label: "Mend Will",
-    requiredStats: { spirit: 4 },
     stat: "spirit",
     tier: 1,
   },
@@ -126,7 +124,6 @@ export const skillText: Record<SkillId, SkillText> = {
     description: "A safer feint that gives ground before slipping through.",
     id: "misdirect",
     label: "Misdirect",
-    requiredStats: { agility: 4 },
     stat: "agility",
     tier: 1,
   },
@@ -207,7 +204,6 @@ export const skillText: Record<SkillId, SkillText> = {
     description: "Accept a more complex route that protects you from mistakes.",
     id: "warded_plan",
     label: "Warded Plan",
-    requiredStats: { intellect: 4 },
     stat: "intellect",
     tier: 1,
   },
@@ -251,18 +247,14 @@ export const chainIdToSkill = Object.fromEntries(
 ) as Record<number, SkillId>;
 
 export const skillPrerequisites: Partial<Record<SkillId, SkillId>> = {
-  brace: "force_entry",
   exploit_pattern: "warded_plan",
   knife_window: "misdirect",
   last_stand: "shield_break",
-  mend_will: "steady_heart",
-  misdirect: "shadow_step",
   oracle_oath: "spirit_breach",
   perfect_theorem: "exploit_pattern",
   shield_break: "brace",
   spirit_breach: "mend_will",
   vanish: "knife_window",
-  warded_plan: "study_weakness",
 };
 
 export function skillsForClass(classId: ClassId): SkillId[] {

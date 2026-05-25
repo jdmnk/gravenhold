@@ -25,7 +25,8 @@ At run start, the player chooses one class:
 - Shade: Agility, evasion, precision.
 - Oracle: Spirit, recovery, resistance.
 
-Each class starts with one learned skill. XP level-ups now grant stat points
+Each class starts with two learned skills: one core skill and one safer survival
+skill. XP level-ups now grant stat points
 every level and skill points on odd XP levels after level 1. Stat points shape
 the build and satisfy skill requirements. Skill points unlock additional class
 skills, including bridge skills that require a class primary stat plus a
@@ -43,8 +44,8 @@ has:
 
 The first pass gives each class four skills:
 
-- one starter skill
-- one safer defensive skill
+- one core starter skill
+- one safer defensive starter skill
 - one higher-risk power skill
 - one boss/support skill
 

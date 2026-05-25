@@ -1120,7 +1120,7 @@ img {
 
 .growth-stat-grid .stat-allocation-row dl,
 .skill-growth-grid .stat-allocation-row dl {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .growth-stat-grid .stat-stepper,
@@ -1175,6 +1175,25 @@ img {
 .skill-growth-list {
   border-top: 2px solid #4b3828;
   padding-top: 10px;
+}
+
+.skill-growth-row h3 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  align-items: center;
+}
+
+.skill-class-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 1px 5px;
+  border: 1px solid #5b402b;
+  color: #d5b68b;
+  background: rgba(12, 9, 8, 0.58);
+  font-size: 12px;
+  line-height: 1;
 }
 
 .skill-growth-row.is-selected {

@@ -1308,10 +1308,6 @@ function GrowthPanel({
                 <dd>{bundle.character.baseStats[stat]}</dd>
               </div>
               <div>
-                <dt>Added</dt>
-                <dd>+{allocation[stat]}</dd>
-              </div>
-              <div>
                 <dt>Next</dt>
                 <dd>{projectedStats[stat]}</dd>
               </div>
@@ -1378,14 +1374,13 @@ function GrowthPanel({
                   src={statIconFor(skill.stat)}
                   width="56"
                 />
-                <h3>{skill.label}</h3>
+                <h3>
+                  {skill.label}
+                  <span className="skill-class-badge">{classInfo.label}</span>
+                </h3>
               </div>
               <p>{skill.description}</p>
               <dl>
-                <div>
-                  <dt>Class</dt>
-                  <dd>{classInfo.label}</dd>
-                </div>
                 <div>
                   <dt>Stat</dt>
                   <dd className="stat-chip-list">

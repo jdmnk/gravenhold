@@ -10,10 +10,15 @@ import {
   decodeRewardOffer,
   decodeRun,
   inventoryItemIds,
-  statIds,
   type ItemView,
   type RunBundle,
 } from "./state";
+import {
+  isSkillUnlocked,
+  skillsForClass,
+  skillToChainId,
+  type SkillId,
+} from "@/lib/rpgContent/classes";
 
 async function view(
   network: GravenholdNetwork,
@@ -44,12 +49,14 @@ export async function getCurrentEncounter(network: GravenholdNetwork, runId: big
   return decodeCurrentEncounter(await view(network, "get_current_encounter", [runId]));
 }
 
-export async function getChoiceForecast(
+export async function getSkillForecast(
   network: GravenholdNetwork,
   runId: bigint,
-  statId: number,
+  skillId: SkillId,
 ) {
-  return decodeChoiceForecast(await view(network, "get_choice_forecast", [runId, statId]));
+  return decodeChoiceForecast(
+    await view(network, "get_skill_forecast", [runId, skillToChainId[skillId]]),
+  );
 }
 
 export async function getChoiceLog(network: GravenholdNetwork, runId: bigint, index: number) {
@@ -75,10 +82,14 @@ export async function loadRunBundle(network: GravenholdNetwork, runId: bigint): 
     (_value, offset) => recentStart + offset,
   );
 
+  const availableSkills = skillsForClass(character.classId).filter((skillId) =>
+    isSkillUnlocked(character.unlockedSkillsBits, skillId),
+  );
+
   const [currentEncounter, forecastList, rewards, recentChoices] = await Promise.all([
     run.phase === "encounter" ? getCurrentEncounter(network, runId) : Promise.resolve(null),
     run.phase === "encounter"
-      ? Promise.all(statIds.map((_stat, index) => getChoiceForecast(network, runId, index)))
+      ? Promise.all(availableSkills.map((skillId) => getSkillForecast(network, runId, skillId)))
       : Promise.resolve(null),
     run.phase === "reward"
       ? Promise.all([0, 1, 2].map((index) => getRewardOffer(network, runId, index)))
@@ -98,12 +109,13 @@ export async function loadRunBundle(network: GravenholdNetwork, runId: bigint): 
     character,
     currentEncounter,
     forecasts: forecastList
-      ? {
-          agility: forecastList[2],
-          intellect: forecastList[1],
-          spirit: forecastList[3],
-          strength: forecastList[0],
-        }
+      ? availableSkills.reduce<Record<SkillId, (typeof forecastList)[number]>>(
+          (accumulator, skillId, index) => {
+            accumulator[skillId] = forecastList[index]!;
+            return accumulator;
+          },
+          {} as Record<SkillId, (typeof forecastList)[number]>,
+        )
       : null,
     items: itemEntries.reduce<Record<number, ItemView>>((accumulator, [itemId, item]) => {
       if (item.exists) {

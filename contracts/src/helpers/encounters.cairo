@@ -11,7 +11,8 @@ use crate::content::data::{
     APPROACH_FAVORED, APPROACH_STRAINED, DIFFICULTY_BOSS, DIFFICULTY_HARD,
     RANDOM_ENCOUNTER_COUNT, STAT_AGILITY, STAT_INTELLECT, STAT_SPIRIT, STAT_STRENGTH,
     boss_encounter_id, encounter_category, encounter_difficulty, fixed_encounter_id,
-    option_approach, random_encounter_id,
+    option_approach, random_encounter_id, skill_difficulty_penalty, skill_difficulty_reduction,
+    skill_exists, skill_failure_damage_penalty, skill_failure_damage_reduction, skill_stat,
 };
 use crate::helpers::items;
 use crate::models::index::{Character, ChoiceForecast, CurrentEncounter, Run};
@@ -22,6 +23,32 @@ pub fn is_boss_level(level: u8) -> bool {
 
 pub fn is_valid_stat(stat: u8) -> bool {
     stat == STAT_STRENGTH || stat == STAT_INTELLECT || stat == STAT_AGILITY || stat == STAT_SPIRIT
+}
+
+pub fn skill_mask(skill_id: u16) -> u64 {
+    let mut mask: u64 = 1;
+    let mut cursor: u16 = 1;
+    while cursor < skill_id {
+        mask *= 2;
+        cursor += 1;
+    }
+    mask
+}
+
+pub fn skill_unlocked(character: @Character, skill_id: u16) -> bool {
+    if !skill_exists(skill_id) {
+        return false;
+    }
+
+    let mask = skill_mask(skill_id);
+    ((*character.unlocked_skills_bits / mask) % 2) == 1
+}
+
+pub fn unlock_skill(mut character: Character, skill_id: u16) -> Character {
+    if !skill_unlocked(@character, skill_id) {
+        character.unlocked_skills_bits += skill_mask(skill_id);
+    }
+    character
 }
 
 pub fn is_final_encounter(encounter_index: u8) -> bool {
@@ -204,6 +231,33 @@ pub fn failure_damage_for_choice(
     damage + boss_support_damage
 }
 
+fn apply_skill_difficulty(base: u16, skill_id: u16) -> u16 {
+    let penalty = skill_difficulty_penalty(skill_id);
+    let reduction = skill_difficulty_reduction(skill_id);
+    let with_penalty = base + penalty;
+    if reduction >= with_penalty {
+        1
+    } else {
+        let reduced = with_penalty - reduction;
+        if reduced == 0 {
+            1
+        } else {
+            reduced
+        }
+    }
+}
+
+fn apply_skill_failure_damage(base: u16, skill_id: u16) -> u16 {
+    let penalty = skill_failure_damage_penalty(skill_id);
+    let reduction = skill_failure_damage_reduction(skill_id);
+    let with_penalty = base + penalty;
+    if reduction >= with_penalty {
+        0
+    } else {
+        with_penalty - reduction
+    }
+}
+
 fn decay_strain(value: u8) -> u8 {
     if value > 0 {
         value - 1
@@ -269,7 +323,8 @@ pub fn apply_choice_strain(
     character
 }
 
-pub fn forecast_choice(run: @Run, character: @Character, stat: u8) -> ChoiceForecast {
+pub fn forecast_skill(run: @Run, character: @Character, skill_id: u16) -> ChoiceForecast {
+    let stat = skill_stat(skill_id);
     let encounter = current_encounter(*run.seed, *run.level, *run.encounter_index);
     let approach = option_approach(encounter.encounter_id, stat);
     let strain_before = stat_strain(character, stat);
@@ -291,18 +346,21 @@ pub fn forecast_choice(run: @Run, character: @Character, stat: u8) -> ChoiceFore
     let boss_support_damage = boss_support_damage_amount(
         boss_encounter, support_value, support_required,
     );
-    let difficulty = option_difficulty(encounter.base_difficulty, approach)
+    let raw_difficulty = option_difficulty(encounter.base_difficulty, approach)
         + strain_difficulty
         + boss_support_difficulty;
+    let difficulty = apply_skill_difficulty(raw_difficulty, skill_id);
     let effective = effective_stat(character, stat);
     let success = effective >= difficulty;
-    let health_loss_on_failure = failure_damage_for_choice(
+    let raw_health_loss_on_failure = failure_damage_for_choice(
         boss_encounter, strain_before, approach, boss_support_damage,
     );
+    let health_loss_on_failure = apply_skill_failure_damage(raw_health_loss_on_failure, skill_id);
     let would_lose_on_failure = *character.health <= health_loss_on_failure;
     let completed_level_on_success = is_final_encounter(*run.encounter_index);
 
     ChoiceForecast {
+        skill_id,
         stat,
         effective_stat: effective,
         base_difficulty: encounter.base_difficulty,
@@ -359,7 +417,7 @@ mod tests {
 
     #[test]
     fn test_strain_updates_chosen_and_unused_stats() {
-        let mut character = CharacterTrait::new(1);
+        let mut character = CharacterTrait::new(1, 0);
         character.strength_strain = 1;
         character.intellect_strain = 2;
         character.agility_strain = 0;
@@ -373,7 +431,7 @@ mod tests {
 
     #[test]
     fn test_favored_success_recovers_chosen_strain() {
-        let mut character = CharacterTrait::new(1);
+        let mut character = CharacterTrait::new(1, 0);
         character.strength_strain = 2;
 
         let updated = apply_choice_strain(character, STAT_STRENGTH, true, APPROACH_FAVORED);
@@ -389,7 +447,7 @@ mod tests {
 
     #[test]
     fn test_boss_support_uses_second_highest_effective_stat() {
-        let mut character = CharacterTrait::new(1);
+        let mut character = CharacterTrait::new(1, 0);
         character.strength = 9;
         character.intellect = 4;
         character.agility = 6;

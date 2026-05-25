@@ -1,3 +1,10 @@
+import {
+  chainIdToClass,
+  chainIdToSkill,
+  type ClassId,
+  type SkillId,
+} from "@/lib/rpgContent/classes";
+
 export const statIds = ["strength", "intellect", "agility", "spirit"] as const;
 export type StatId = (typeof statIds)[number];
 
@@ -25,7 +32,7 @@ export const slotLabels: Record<EquipmentSlot, string> = {
 };
 
 export type RunStatus = "not_started" | "playing" | "reward" | "won" | "lost";
-export type GamePhase = "encounter" | "reward" | "stat_allocate" | "complete";
+export type GamePhase = "encounter" | "reward" | "growth" | "complete";
 export type EncounterSource = "fixed" | "random" | "boss";
 export type EncounterCategory = "obstacle" | "enemy" | "social" | "mystery" | "survival" | "boss";
 export type EncounterDifficulty = "normal" | "hard" | "boss";
@@ -51,11 +58,14 @@ export type RunView = {
 
 export type CharacterView = {
   runId: bigint;
+  classId: ClassId;
   health: number;
   maxHealth: number;
   xpLevel: number;
   xp: number;
-  unspentStatPoints: number;
+  skillPoints: number;
+  statPoints: number;
+  unlockedSkillsBits: bigint;
   baseStats: Record<StatId, number>;
   strain: Record<StatId, number>;
   equipment: Record<EquipmentSlot, number>;
@@ -73,6 +83,7 @@ export type CurrentEncounterView = {
 };
 
 export type ChoiceForecastView = {
+  skillId: SkillId;
   stat: StatId;
   effectiveStat: number;
   baseDifficulty: number;
@@ -102,6 +113,7 @@ export type ChoiceLogView = {
   level: number;
   encounterIndex: number;
   encounterId: number;
+  skillId: SkillId;
   stat: StatId;
   success: boolean;
   effectiveStat: number;
@@ -150,7 +162,7 @@ export type RunBundle = {
   run: RunView;
   character: CharacterView;
   currentEncounter: CurrentEncounterView | null;
-  forecasts: Record<StatId, ChoiceForecastView> | null;
+  forecasts: Record<SkillId, ChoiceForecastView> | null;
   items: Record<number, ItemView>;
   rewards: RewardOfferView[];
   recentChoices: ChoiceLogView[];
@@ -168,7 +180,7 @@ const phaseMap: Record<number, GamePhase> = {
   0: "encounter",
   1: "reward",
   2: "complete",
-  3: "stat_allocate",
+  3: "growth",
 };
 
 const sourceMap: Record<number, EncounterSource> = {
@@ -275,29 +287,32 @@ export function decodeRun(felts: string[]): RunView {
 export function decodeCharacter(felts: string[]): CharacterView {
   return {
     runId: felt(felts, 0),
-    health: num(felts, 1),
-    maxHealth: num(felts, 2),
-    xpLevel: num(felts, 3),
-    xp: num(felts, 4),
-    unspentStatPoints: num(felts, 5),
+    classId: enumValue(chainIdToClass, num(felts, 1), "class"),
+    health: num(felts, 2),
+    maxHealth: num(felts, 3),
+    xpLevel: num(felts, 4),
+    xp: num(felts, 5),
+    skillPoints: num(felts, 6),
+    statPoints: num(felts, 7),
+    unlockedSkillsBits: felt(felts, 8),
     baseStats: {
-      strength: num(felts, 6),
-      intellect: num(felts, 7),
-      agility: num(felts, 8),
-      spirit: num(felts, 9),
+      strength: num(felts, 9),
+      intellect: num(felts, 10),
+      agility: num(felts, 11),
+      spirit: num(felts, 12),
     },
     strain: {
-      strength: num(felts, 10),
-      intellect: num(felts, 11),
-      agility: num(felts, 12),
-      spirit: num(felts, 13),
+      strength: num(felts, 13),
+      intellect: num(felts, 14),
+      agility: num(felts, 15),
+      spirit: num(felts, 16),
     },
     equipment: {
-      weapon: num(felts, 14),
-      armor: num(felts, 15),
-      trinket: num(felts, 16),
+      weapon: num(felts, 17),
+      armor: num(felts, 18),
+      trinket: num(felts, 19),
     },
-    inventoryBits: felt(felts, 17),
+    inventoryBits: felt(felts, 20),
   };
 }
 
@@ -315,27 +330,28 @@ export function decodeCurrentEncounter(felts: string[]): CurrentEncounterView {
 
 export function decodeChoiceForecast(felts: string[]): ChoiceForecastView {
   return {
-    stat: enumValue(statMap, num(felts, 0), "stat"),
-    effectiveStat: num(felts, 1),
-    baseDifficulty: num(felts, 2),
-    difficulty: num(felts, 3),
-    difficultyModifierSign: enumValue(deltaSignMap, num(felts, 4), "difficulty sign"),
-    difficultyModifierAmount: num(felts, 5),
-    approach: enumValue(approachMap, num(felts, 6), "approach"),
-    success: bool(felts, 7),
-    bossEncounter: bool(felts, 8),
-    healthLossOnFailure: num(felts, 9),
-    wouldLoseOnFailure: bool(felts, 10),
-    bossRetriesOnFailure: bool(felts, 11),
-    completedLevelOnSuccess: bool(felts, 12),
-    opensRewardOnSuccess: bool(felts, 13),
-    winsOnSuccess: bool(felts, 14),
-    strainBefore: num(felts, 15),
-    strainDifficultyAmount: num(felts, 16),
-    bossSupportRequired: num(felts, 17),
-    bossSupportValue: num(felts, 18),
-    bossSupportDifficultyAmount: num(felts, 19),
-    bossSupportDamageAmount: num(felts, 20),
+    skillId: enumValue(chainIdToSkill, num(felts, 0), "skill"),
+    stat: enumValue(statMap, num(felts, 1), "stat"),
+    effectiveStat: num(felts, 2),
+    baseDifficulty: num(felts, 3),
+    difficulty: num(felts, 4),
+    difficultyModifierSign: enumValue(deltaSignMap, num(felts, 5), "difficulty sign"),
+    difficultyModifierAmount: num(felts, 6),
+    approach: enumValue(approachMap, num(felts, 7), "approach"),
+    success: bool(felts, 8),
+    bossEncounter: bool(felts, 9),
+    healthLossOnFailure: num(felts, 10),
+    wouldLoseOnFailure: bool(felts, 11),
+    bossRetriesOnFailure: bool(felts, 12),
+    completedLevelOnSuccess: bool(felts, 13),
+    opensRewardOnSuccess: bool(felts, 14),
+    winsOnSuccess: bool(felts, 15),
+    strainBefore: num(felts, 16),
+    strainDifficultyAmount: num(felts, 17),
+    bossSupportRequired: num(felts, 18),
+    bossSupportValue: num(felts, 19),
+    bossSupportDifficultyAmount: num(felts, 20),
+    bossSupportDamageAmount: num(felts, 21),
   };
 }
 
@@ -346,22 +362,23 @@ export function decodeChoiceLog(felts: string[]): ChoiceLogView {
     level: num(felts, 2),
     encounterIndex: num(felts, 3),
     encounterId: num(felts, 4),
-    stat: enumValue(statMap, num(felts, 5), "stat"),
-    success: bool(felts, 6),
-    effectiveStat: num(felts, 7),
-    baseDifficulty: num(felts, 8),
-    difficulty: num(felts, 9),
-    difficultyModifierSign: enumValue(deltaSignMap, num(felts, 10), "difficulty sign"),
-    difficultyModifierAmount: num(felts, 11),
-    healthDeltaSign: enumValue(deltaSignMap, num(felts, 12), "health sign"),
-    healthDeltaAmount: num(felts, 13),
-    xpGain: num(felts, 14),
-    xpLevelAfter: num(felts, 15),
-    leveledUp: bool(felts, 16),
-    bossEncounter: bool(felts, 17),
-    bossDefeated: bool(felts, 18),
-    completedLevel: bool(felts, 19),
-    gameEnded: bool(felts, 20),
+    skillId: enumValue(chainIdToSkill, num(felts, 5), "skill"),
+    stat: enumValue(statMap, num(felts, 6), "stat"),
+    success: bool(felts, 7),
+    effectiveStat: num(felts, 8),
+    baseDifficulty: num(felts, 9),
+    difficulty: num(felts, 10),
+    difficultyModifierSign: enumValue(deltaSignMap, num(felts, 11), "difficulty sign"),
+    difficultyModifierAmount: num(felts, 12),
+    healthDeltaSign: enumValue(deltaSignMap, num(felts, 13), "health sign"),
+    healthDeltaAmount: num(felts, 14),
+    xpGain: num(felts, 15),
+    xpLevelAfter: num(felts, 16),
+    leveledUp: bool(felts, 17),
+    bossEncounter: bool(felts, 18),
+    bossDefeated: bool(felts, 19),
+    completedLevel: bool(felts, 20),
+    gameEnded: bool(felts, 21),
   };
 }
 

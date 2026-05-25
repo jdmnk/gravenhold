@@ -1,7 +1,12 @@
 import { CallData } from "starknet";
 
 import { type GravenholdNetwork, providerForNetwork } from "./networkConfig";
-import { statIds, statToChainId, type StatId } from "./state";
+import {
+  classToChainId,
+  skillToChainId,
+  type ClassId,
+  type SkillId,
+} from "@/lib/rpgContent/classes";
 
 export type GameSigner = {
   execute: (calls: Array<{
@@ -19,10 +24,11 @@ export async function startRun(
   network: GravenholdNetwork,
   signer: GameSigner,
   seed: string,
+  classId: ClassId,
 ): Promise<string> {
   const tx = await signer.execute([
     {
-      calldata: CallData.compile([seedToFelt(seed)]),
+      calldata: CallData.compile([seedToFelt(seed), classToChainId[classId]]),
       contractAddress: network.actionsAddress,
       entrypoint: "start_run",
     },
@@ -31,44 +37,68 @@ export async function startRun(
   return tx.transaction_hash;
 }
 
-export async function chooseOption(
+export async function chooseSkill(
   network: GravenholdNetwork,
   signer: GameSigner,
   runId: bigint,
-  stat: StatId,
+  skillId: SkillId,
 ): Promise<string> {
   const tx = await signer.execute([
     {
-      calldata: CallData.compile([runId, statToChainId[stat]]),
+      calldata: CallData.compile([runId, skillToChainId[skillId]]),
       contractAddress: network.actionsAddress,
-      entrypoint: "choose_option",
+      entrypoint: "choose_skill",
     },
   ]);
   await waitForSuccess(network, tx.transaction_hash);
   return tx.transaction_hash;
 }
 
-export type StatPointAllocation = Record<StatId, number>;
-
-export async function assignStatPoints(
+export async function unlockSkill(
   network: GravenholdNetwork,
   signer: GameSigner,
   runId: bigint,
-  allocation: StatPointAllocation,
+  skillId: SkillId,
 ): Promise<string> {
-  const calls = statIds.flatMap((stat) =>
-    Array.from({ length: allocation[stat] }, () => ({
-      calldata: CallData.compile([runId, statToChainId[stat]]),
+  const tx = await signer.execute([
+    {
+      calldata: CallData.compile([runId, skillToChainId[skillId]]),
       contractAddress: network.actionsAddress,
-      entrypoint: "assign_stat_point",
-    })),
-  );
+      entrypoint: "unlock_skill",
+    },
+  ]);
+  await waitForSuccess(network, tx.transaction_hash);
+  return tx.transaction_hash;
+}
 
-  if (calls.length === 0) {
-    throw new Error("No stat points selected.");
-  }
+export type GrowthAllocation = {
+  agility: number;
+  intellect: number;
+  spirit: number;
+  strength: number;
+};
 
-  const tx = await signer.execute(calls);
+export async function allocateGrowth(
+  network: GravenholdNetwork,
+  signer: GameSigner,
+  runId: bigint,
+  allocation: GrowthAllocation,
+  skillId: SkillId | null,
+): Promise<string> {
+  const tx = await signer.execute([
+    {
+      calldata: CallData.compile([
+        runId,
+        allocation.strength,
+        allocation.intellect,
+        allocation.agility,
+        allocation.spirit,
+        skillId ? skillToChainId[skillId] : 0,
+      ]),
+      contractAddress: network.actionsAddress,
+      entrypoint: "allocate_growth",
+    },
+  ]);
   await waitForSuccess(network, tx.transaction_hash);
   return tx.transaction_hash;
 }

@@ -192,6 +192,45 @@ img {
   animation: intro-copy-enter 220ms steps(3, end) 420ms both;
 }
 
+.class-select-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 8px;
+  width: min(760px, 100%);
+}
+
+.class-choice {
+  display: grid;
+  gap: 4px;
+  min-height: 104px;
+  padding: 10px;
+  border-color: var(--stat-color);
+  color: #f3dfb5;
+  background: linear-gradient(rgba(24, 17, 13, 0.88), rgba(14, 10, 8, 0.94)),
+    var(--stat-surface);
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.28),
+    0 0 0 0 rgba(0, 0, 0, 0);
+  white-space: normal;
+  text-align: left;
+}
+
+.class-choice[aria-pressed="true"] {
+  outline: 2px solid #f0dd9b;
+  outline-offset: 2px;
+}
+
+.class-choice b {
+  color: var(--stat-color);
+  font-size: 22px;
+}
+
+.class-choice span {
+  color: #d8bea0;
+  font-size: 17px;
+  line-height: 1.1;
+}
+
 .start-screen form {
   display: flex;
   flex-wrap: wrap;
@@ -1031,6 +1070,23 @@ img {
   color: #e7c99e;
   background:
     linear-gradient(rgba(20, 14, 11, 0.82), rgba(11, 8, 7, 0.94)),
+    url("/assets/game/ui/bg-dark.png") center / 120px;
+}
+
+.stat-growth-row {
+  grid-template-columns: minmax(150px, 0.8fr) minmax(260px, 1fr) minmax(210px, 0.9fr) auto;
+}
+
+.skill-growth-list {
+  border-top: 2px solid #4b3828;
+  padding-top: 10px;
+}
+
+.skill-growth-row.is-selected {
+  border-color: #d0a25a;
+  border-left-color: var(--stat-color);
+  background:
+    linear-gradient(rgba(39, 26, 16, 0.86), rgba(12, 8, 6, 0.96)),
     url("/assets/game/ui/bg-dark.png") center / 120px;
 }
 
@@ -1906,6 +1962,10 @@ img {
   .reward-art,
   .complete-art {
     min-height: 216px;
+  }
+
+  .class-select-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .how-it-works-backdrop {

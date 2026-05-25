@@ -226,7 +226,7 @@ mod tests {
 
     #[test]
     fn test_inventory_default_empty() {
-        let character = CharacterTrait::new(1);
+        let character = CharacterTrait::new(1, 0);
         assert(!inventory_has(@character, 1), 'inventory empty');
     }
 

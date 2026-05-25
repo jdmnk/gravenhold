@@ -24,11 +24,14 @@ pub struct Run {
 pub struct Character {
     #[key]
     pub run_id: felt252,
+    pub class_id: u8,
     pub health: u16,
     pub max_health: u16,
     pub xp_level: u16,
     pub xp: u16,
-    pub unspent_stat_points: u16,
+    pub skill_points: u16,
+    pub stat_points: u16,
+    pub unlocked_skills_bits: u64,
     pub strength: u16,
     pub intellect: u16,
     pub agility: u16,
@@ -69,6 +72,7 @@ pub struct ChoiceLog {
     pub level: u8,
     pub encounter_index: u8,
     pub encounter_id: u16,
+    pub skill_id: u16,
     pub stat: u8,
     pub success: bool,
     pub effective_stat: u16,
@@ -126,6 +130,7 @@ pub struct CurrentEncounter {
 
 #[derive(Copy, Drop, Serde)]
 pub struct ChoiceForecast {
+    pub skill_id: u16,
     pub stat: u8,
     pub effective_stat: u16,
     pub base_difficulty: u16,

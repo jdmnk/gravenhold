@@ -21,7 +21,7 @@ const account = new Account({
 
 const tx = await account.execute([
   {
-    calldata: CallData.compile([seedToFelt(seed)]),
+    calldata: CallData.compile([seedToFelt(seed), 0]),
     contractAddress: actionsAddress,
     entrypoint: "start_run",
   },

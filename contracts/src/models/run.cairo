@@ -3,6 +3,7 @@ use crate::constants::{
     PHASE_ENCOUNTER, STARTING_HEALTH, STARTING_STAT, STARTING_XP, STARTING_XP_LEVEL,
     STATUS_PLAYING,
 };
+use crate::content::data::class_starting_skill;
 pub use crate::models::index::{Character, Run};
 
 pub mod Errors {
@@ -45,14 +46,29 @@ pub impl RunImpl of RunTrait {
 
 #[generate_trait]
 pub impl CharacterImpl of CharacterTrait {
-    fn new(run_id: felt252) -> Character {
+    fn new(run_id: felt252, class_id: u8) -> Character {
+        let starting_skill = class_starting_skill(class_id);
+        let mut unlocked_skills_bits: u64 = 0;
+        if starting_skill > 0 {
+            let mut mask: u64 = 1;
+            let mut cursor: u16 = 1;
+            while cursor < starting_skill {
+                mask *= 2;
+                cursor += 1;
+            }
+            unlocked_skills_bits = mask;
+        }
+
         Character {
             run_id,
+            class_id,
             health: STARTING_HEALTH,
             max_health: STARTING_HEALTH,
             xp_level: STARTING_XP_LEVEL,
             xp: STARTING_XP,
-            unspent_stat_points: 0,
+            skill_points: 0,
+            stat_points: 0,
+            unlocked_skills_bits,
             strength: STARTING_STAT,
             intellect: STARTING_STAT,
             agility: STARTING_STAT,
@@ -76,14 +92,17 @@ mod tests {
 
     #[test]
     fn test_initial_character_values() {
-        let character = CharacterTrait::new(123);
+        let character = CharacterTrait::new(123, 0);
 
         assert_eq!(character.run_id, 123);
+        assert_eq!(character.class_id, 0);
         assert_eq!(character.health, STARTING_HEALTH);
         assert_eq!(character.max_health, STARTING_HEALTH);
         assert_eq!(character.xp_level, STARTING_XP_LEVEL);
         assert_eq!(character.xp, STARTING_XP);
-        assert_eq!(character.unspent_stat_points, 0);
+        assert_eq!(character.skill_points, 0);
+        assert_eq!(character.stat_points, 0);
+        assert_eq!(character.unlocked_skills_bits, 1);
         assert_eq!(character.strength, STARTING_STAT);
         assert_eq!(character.intellect, STARTING_STAT);
         assert_eq!(character.agility, STARTING_STAT);

@@ -24,12 +24,12 @@ import {
 } from "@/lib/assets/gameAssets";
 import { getNetwork, type GravenholdNetwork } from "@/lib/chain/networkConfig";
 import {
-  assignStatPoints,
-  type StatPointAllocation,
-  chooseOption,
+  allocateGrowth,
+  chooseSkill,
   chooseReward,
   equipItem,
   startRun,
+  type GrowthAllocation,
 } from "@/lib/chain/systems";
 import {
   equipmentSlots,
@@ -61,6 +61,16 @@ import {
   itemText,
   storyText,
 } from "@/lib/rpgContent/generatedText";
+import {
+  classIds,
+  classText,
+  isSkillUnlocked,
+  skillPrerequisites,
+  skillText,
+  skillsForClass,
+  type ClassId,
+  type SkillId,
+} from "@/lib/rpgContent/classes";
 
 import "./App.css";
 
@@ -93,13 +103,14 @@ type ChainConnection =
 
 type PendingAction =
   | { kind: "start" }
-  | { kind: "choice"; stat: StatId }
-  | { allocation: StatPointAllocation; kind: "stat" }
+  | { kind: "choice"; skillId: SkillId }
+  | { kind: "growth"; skillId: SkillId | null }
   | { equipNow: boolean; kind: "reward"; rewardIndex: number }
   | { itemId: number; kind: "equip" };
 
 export default function Home() {
   const [seedInput, setSeedInput] = useState(defaultSeed);
+  const [selectedClass, setSelectedClass] = useState<ClassId>("vanguard");
   const [connection] = useState<ChainConnection>(() => {
     try {
       return {
@@ -272,24 +283,24 @@ export default function Home() {
       const seed = showLocalSeed
         ? seedInput.trim() || defaultSeed
         : createRunSeed(network);
-      await startRun(network, activeSession.signer, seed);
+      await startRun(network, activeSession.signer, seed, selectedClass);
       await loadActive(network, activeSession);
       setToast({ message: "Onchain run started." });
     });
   }
 
-  function handleChooseStat(stat: StatId) {
-    void runAction({ kind: "choice", stat }, async () => {
+  function handleChooseSkill(skillId: SkillId) {
+    void runAction({ kind: "choice", skillId }, async () => {
       if (!network || !session || !bundle) throw new Error("Run is not ready.");
-      await chooseOption(network, session.signer, bundle.run.id, stat);
+      await chooseSkill(network, session.signer, bundle.run.id, skillId);
       await loadByRunId(network, bundle.run.id);
     });
   }
 
-  function handleAssignStatPoints(allocation: StatPointAllocation) {
-    void runAction({ allocation, kind: "stat" }, async () => {
+  function handleAllocateGrowth(allocation: GrowthAllocation, skillId: SkillId | null) {
+    void runAction({ kind: "growth", skillId }, async () => {
       if (!network || !session || !bundle) throw new Error("Run is not ready.");
-      await assignStatPoints(network, session.signer, bundle.run.id, allocation);
+      await allocateGrowth(network, session.signer, bundle.run.id, allocation, skillId);
       await loadByRunId(network, bundle.run.id);
     });
   }
@@ -362,8 +373,10 @@ export default function Home() {
             connectingSession={connectingSession}
             network={network}
             seedInput={seedInput}
+            selectedClass={selectedClass}
             showLocalSeed={showLocalSeed}
             onSeedInputChange={setSeedInput}
+            onSelectedClassChange={setSelectedClass}
             onShowHowItWorks={() => setHowItWorksOpen(true)}
             onStartRun={handleStartRun}
           />
@@ -379,8 +392,8 @@ export default function Home() {
             pendingAction={pendingAction}
             seedInput={seedInput}
             session={session}
-            onChooseStat={handleChooseStat}
-            onAssignStatPoints={handleAssignStatPoints}
+            onChooseSkill={handleChooseSkill}
+            onAllocateGrowth={handleAllocateGrowth}
             onEquip={handleEquip}
             onReward={handleReward}
             onRestart={handleStartRun}
@@ -455,8 +468,10 @@ function StartPanel({
   connectingSession,
   network,
   seedInput,
+  selectedClass,
   showLocalSeed,
   onSeedInputChange,
+  onSelectedClassChange,
   onShowHowItWorks,
   onStartRun,
 }: {
@@ -464,8 +479,10 @@ function StartPanel({
   connectingSession: boolean;
   network: GravenholdNetwork | null;
   seedInput: string;
+  selectedClass: ClassId;
   showLocalSeed: boolean;
   onSeedInputChange: (value: string) => void;
+  onSelectedClassChange: (classId: ClassId) => void;
   onShowHowItWorks: () => void;
   onStartRun: () => void;
 }) {
@@ -481,6 +498,24 @@ function StartPanel({
       <h1 className="intro-title">{storyText.title}</h1>
       <p className="intro-subtitle">{storyText.subtitle}</p>
       <p className="intro-copy">{storyText.intro}</p>
+
+      <section aria-label="Choose class" className="class-select-grid">
+        {classIds.map((classId) => {
+          const text = classText[classId];
+          return (
+            <button
+              aria-pressed={selectedClass === classId}
+              className={`class-choice stat-tone ${statClass(text.stat)}`}
+              key={classId}
+              onClick={() => onSelectedClassChange(classId)}
+              type="button"
+            >
+              <b>{text.label}</b>
+              <span>{text.description}</span>
+            </button>
+          );
+        })}
+      </section>
 
       <form
         className="intro-actions"
@@ -509,8 +544,8 @@ function GameConsole({
   pendingAction,
   seedInput,
   session,
-  onChooseStat,
-  onAssignStatPoints,
+  onAllocateGrowth,
+  onChooseSkill,
   onEquip,
   onReward,
   onRestart,
@@ -526,8 +561,8 @@ function GameConsole({
   pendingAction: PendingAction | null;
   seedInput: string;
   session: GameSession;
-  onChooseStat: (stat: StatId) => void;
-  onAssignStatPoints: (allocation: StatPointAllocation) => void;
+  onAllocateGrowth: (allocation: GrowthAllocation, skillId: SkillId | null) => void;
+  onChooseSkill: (skillId: SkillId) => void;
   onEquip: (itemId: number) => void;
   onReward: (reward: RewardOfferView, equipNow: boolean) => void;
   onRestart: () => void;
@@ -542,7 +577,7 @@ function GameConsole({
       currentText &&
       bundle.forecasts,
   );
-  const showingStatAllocation = bundle.run.phase === "stat_allocate";
+  const showingGrowth = bundle.run.phase === "growth";
   const showingReward = bundle.run.phase === "reward";
   const showingComplete = bundle.run.phase === "complete";
   const latestLog = getLatestChoiceLog(bundle);
@@ -584,7 +619,7 @@ function GameConsole({
               currentText={currentText!}
               latestLog={latestLog}
               pendingLabel={pendingLabel}
-              onChooseStat={onChooseStat}
+              onChooseSkill={onChooseSkill}
               onChoiceClick={audio.playChoiceClick}
             />
           ) : null}
@@ -600,13 +635,13 @@ function GameConsole({
             />
           ) : null}
 
-          {showingStatAllocation ? (
-            <StatAllocationPanel
+          {showingGrowth ? (
+            <GrowthPanel
               bundle={bundle}
               busy={busy}
               pendingAction={pendingAction}
               pendingLabel={pendingLabel}
-              onAssignStatPoints={onAssignStatPoints}
+              onAllocateGrowth={onAllocateGrowth}
             />
           ) : null}
 
@@ -659,8 +694,11 @@ function RunSummary({ bundle }: { bundle: RunBundle }) {
         <b>XP Level {bundle.character.xpLevel}</b>
         <p>
           {bundle.character.xp}/{xpRequired} XP
-          {bundle.character.unspentStatPoints > 0
-            ? ` / ${bundle.character.unspentStatPoints} point`
+          {bundle.character.skillPoints > 0
+            ? ` / ${bundle.character.skillPoints} skill point`
+            : ""}
+          {bundle.character.statPoints > 0
+            ? ` / ${bundle.character.statPoints} stat point`
             : ""}
         </p>
         <div className="meter progress-meter" aria-hidden="true">
@@ -895,7 +933,7 @@ function EncounterPanel({
   latestLog,
   pendingLabel,
   onChoiceClick,
-  onChooseStat,
+  onChooseSkill,
 }: {
   bundle: RunBundle;
   busy: boolean;
@@ -903,11 +941,12 @@ function EncounterPanel({
   latestLog: ChoiceLogView | null;
   pendingLabel: string | null;
   onChoiceClick: () => void;
-  onChooseStat: (stat: StatId) => void;
+  onChooseSkill: (skillId: SkillId) => void;
 }) {
   const current = bundle.currentEncounter!;
   const background = encounterBackgroundFor(current.encounterId);
   const isBoss = current.difficultyKind === "boss";
+  const forecasts = Object.values(bundle.forecasts!);
 
   return (
     <section aria-label="Encounter" className="encounter-panel">
@@ -933,17 +972,16 @@ function EncounterPanel({
 
       <section aria-label="Choices" className="choice-grid">
         <h3>Choices</h3>
-        {statIds.map((stat) => (
+        {forecasts.map((forecast) => (
           <ChoiceButton
             busy={busy}
-            forecast={bundle.forecasts![stat]}
-            key={stat}
-            secondaryStat={getChoiceSecondaryStat(bundle, bundle.forecasts![stat])}
-            stat={stat}
-            text={currentText.options[stat]}
+            forecast={forecast}
+            key={forecast.skillId}
+            secondaryStat={getChoiceSecondaryStat(bundle, forecast)}
+            text={currentText.options[forecast.stat]}
             xpGain={getEncounterXp(current)}
             onChoiceClick={onChoiceClick}
-            onChoose={onChooseStat}
+            onChoose={onChooseSkill}
           />
         ))}
       </section>
@@ -1008,7 +1046,6 @@ function ChoiceButton({
   busy,
   forecast,
   secondaryStat,
-  stat,
   text,
   xpGain,
   onChoiceClick,
@@ -1017,12 +1054,13 @@ function ChoiceButton({
   busy: boolean;
   forecast: ChoiceForecastView;
   secondaryStat: StatId | null;
-  stat: StatId;
   text: { description: string; label: string };
   xpGain: number;
   onChoiceClick: () => void;
-  onChoose: (stat: StatId) => void;
+  onChoose: (skillId: SkillId) => void;
 }) {
+  const stat = forecast.stat;
+  const skill = skillText[forecast.skillId];
   const style = secondaryStat
     ? ({
         "--secondary-stat-color": statColorFor(secondaryStat),
@@ -1050,10 +1088,12 @@ function ChoiceButton({
           src={statIconFor(stat)}
           width="56"
         />
-        <h4>{text.label}</h4>
+        <h4>{skill.label}</h4>
         <b>{statShortLabels[stat]}</b>
       </div>
-      <p className="choice-description">{text.description}</p>
+      <p className="choice-description">
+        {skill.description} {text.description}
+      </p>
       <dl>
         <div>
           <dt>Check</dt>
@@ -1082,11 +1122,11 @@ function ChoiceButton({
         disabled={busy}
         onClick={() => {
           onChoiceClick();
-          onChoose(stat);
+          onChoose(forecast.skillId);
         }}
         type="button"
       >
-        Choose {statLabels[stat]}
+        Use {skill.label}
       </button>
     </article>
   );
@@ -1104,117 +1144,248 @@ function getChoiceSecondaryStat(
   return supportStat === forecast.stat ? null : supportStat;
 }
 
-function StatAllocationPanel({
+function hasRequiredStats(
+  stats: Record<StatId, number>,
+  requirements: Partial<Record<StatId, number>> | undefined,
+): boolean {
+  if (!requirements) return true;
+  return statIds.every((stat) => stats[stat] >= (requirements[stat] ?? 0));
+}
+
+function canLearnSkill(
+  bundle: RunBundle,
+  projectedStats: Record<StatId, number>,
+  skillId: SkillId,
+): boolean {
+  const prerequisite = skillPrerequisites[skillId];
+  return (
+    bundle.character.skillPoints > 0 &&
+    !isSkillUnlocked(bundle.character.unlockedSkillsBits, skillId) &&
+    (!prerequisite ||
+      isSkillUnlocked(bundle.character.unlockedSkillsBits, prerequisite)) &&
+    hasRequiredStats(projectedStats, skillText[skillId].requiredStats)
+  );
+}
+
+function getSkillRequirementText(skillId: SkillId): string {
+  const skill = skillText[skillId];
+  const statRequirements = statIds
+    .map((stat) => {
+      const value = skill.requiredStats?.[stat] ?? 0;
+      return value > 0 ? `${statShortLabels[stat]} ${value}` : null;
+    })
+    .filter(Boolean);
+  const prerequisite = skillPrerequisites[skillId];
+  const requirements = [
+    prerequisite ? skillText[prerequisite].label : null,
+    ...statRequirements,
+  ].filter(Boolean);
+  return requirements.length > 0 ? requirements.join(", ") : "Starter";
+}
+
+function getStatGrowthDescription(stat: StatId): string {
+  switch (stat) {
+    case "strength":
+      return "Force, endurance, and direct survival.";
+    case "intellect":
+      return "Reading danger, planning routes, and shaping rewards.";
+    case "agility":
+      return "Speed, precision, evasion, and clean exits.";
+    case "spirit":
+      return "Resolve, recovery, fear resistance, and mystic pressure.";
+  }
+}
+
+function GrowthPanel({
   bundle,
   busy,
   pendingAction,
   pendingLabel,
-  onAssignStatPoints,
+  onAllocateGrowth,
 }: {
   bundle: RunBundle;
   busy: boolean;
   pendingAction: PendingAction | null;
   pendingLabel: string | null;
-  onAssignStatPoints: (allocation: StatPointAllocation) => void;
+  onAllocateGrowth: (allocation: GrowthAllocation, skillId: SkillId | null) => void;
 }) {
-  const points = bundle.character.unspentStatPoints;
+  const [allocation, setAllocation] = useState<GrowthAllocation>({
+    agility: 0,
+    intellect: 0,
+    spirit: 0,
+    strength: 0,
+  });
+  const [selectedSkill, setSelectedSkill] = useState<SkillId | null>(null);
+  const allocatedPoints = statIds.reduce((sum, stat) => sum + allocation[stat], 0);
+  const remainingPoints = bundle.character.statPoints - allocatedPoints;
   const nextStep = getPhaseLabel(bundle.run.pendingPhase);
-  const [allocation, setAllocation] = useState<StatPointAllocation>(() =>
-    createEmptyAllocation(),
+  const classInfo = classText[bundle.character.classId];
+  const skills = skillsForClass(bundle.character.classId);
+  const projectedStats = statIds.reduce<Record<StatId, number>>(
+    (stats, stat) => {
+      stats[stat] = bundle.character.baseStats[stat] + allocation[stat];
+      return stats;
+    },
+    {} as Record<StatId, number>,
   );
-  const allocatedPoints = getAllocatedPoints(allocation);
-  const pointsRemaining = Math.max(0, points - allocatedPoints);
-  const canConfirm = allocatedPoints === points && points > 0 && !busy;
+  const selectedSkillCanUnlock = selectedSkill
+    ? canLearnSkill(bundle, projectedStats, selectedSkill)
+    : true;
+  const canConfirm = remainingPoints === 0 && !busy && selectedSkillCanUnlock;
 
-  useEffect(() => {
-    setAllocation(createEmptyAllocation());
-  }, [bundle.run.id, bundle.character.xpLevel, points]);
-
-  function adjustAllocation(stat: StatId, delta: number) {
+  function updateAllocation(stat: StatId, delta: number) {
     setAllocation((current) => {
-      const nextValue = Math.max(0, current[stat] + delta);
-      const next = { ...current, [stat]: nextValue };
-      if (getAllocatedPoints(next) > points) return current;
-      return next;
+      const nextValue = current[stat] + delta;
+      const currentTotal = statIds.reduce((sum, id) => sum + current[id], 0);
+      if (nextValue < 0) return current;
+      if (delta > 0 && currentTotal >= bundle.character.statPoints) return current;
+      return { ...current, [stat]: nextValue };
     });
   }
 
   return (
-    <section aria-label="Assign stat point" className="stat-allocation-panel">
+    <section aria-label="Character growth" className="stat-allocation-panel">
       {pendingLabel ? <ScenePendingOverlay label={pendingLabel} /> : null}
       <header className="stat-allocation-header">
         <div>
-          <h2>Level {bundle.character.xpLevel}</h2>
+          <h2>{classInfo.label} Level {bundle.character.xpLevel}</h2>
           <p>
-            Assign {points} stat point{points === 1 ? "" : "s"} to continue to{" "}
-            {nextStep}. {pointsRemaining} left.
+            Assign {bundle.character.statPoints} stat point
+            {bundle.character.statPoints === 1 ? "" : "s"}. Skill points can be spent now or saved.
           </p>
         </div>
         <div className="xp-readout">
-          <b>{bundle.character.xp} XP</b>
-          <p>toward level {bundle.character.xpLevel + 1}</p>
+          <b>{remainingPoints} stat / {bundle.character.skillPoints} skill</b>
+          <p>then continue to {nextStep}</p>
         </div>
       </header>
 
       <div className="stat-allocation-list">
-        {statIds.map((stat) => {
-          const base = bundle.character.baseStats[stat];
-          const equipment = getEquipmentStatBonus(bundle, stat);
-          const effective = base + equipment;
-          const assigned = allocation[stat];
+        {statIds.map((stat) => (
+          <article
+            className={`stat-allocation-row stat-growth-row stat-tone ${statClass(stat)}`}
+            key={stat}
+          >
+            <div className="stat-allocation-topline">
+              <img
+                alt=""
+                className="stat-icon"
+                height="56"
+                src={statIconFor(stat)}
+                width="56"
+              />
+              <h3>{statLabels[stat]}</h3>
+            </div>
+            <p>{getStatGrowthDescription(stat)}</p>
+            <dl>
+              <div>
+                <dt>Current</dt>
+                <dd>{bundle.character.baseStats[stat]}</dd>
+              </div>
+              <div>
+                <dt>Added</dt>
+                <dd>+{allocation[stat]}</dd>
+              </div>
+              <div>
+                <dt>Next</dt>
+                <dd>{projectedStats[stat]}</dd>
+              </div>
+            </dl>
+            <div className="stat-stepper" aria-label={`${statLabels[stat]} allocation`}>
+              <button
+                disabled={busy || allocation[stat] <= 0}
+                onClick={() => updateAllocation(stat, -1)}
+                type="button"
+              >
+                -
+              </button>
+              <b>{allocation[stat]}</b>
+              <button
+                disabled={busy || remainingPoints <= 0}
+                onClick={() => updateAllocation(stat, 1)}
+                type="button"
+              >
+                +
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="stat-allocation-list skill-growth-list">
+        {skills.map((skillId) => {
+          const skill = skillText[skillId];
+          const unlocked = isSkillUnlocked(
+            bundle.character.unlockedSkillsBits,
+            skillId,
+          );
+          const prerequisite = skillPrerequisites[skillId];
+          const prerequisiteUnlocked =
+            !prerequisite ||
+            isSkillUnlocked(bundle.character.unlockedSkillsBits, prerequisite);
+          const hasStats = hasRequiredStats(projectedStats, skill.requiredStats);
+          const canLearn =
+            !unlocked &&
+            bundle.character.skillPoints > 0 &&
+            prerequisiteUnlocked &&
+            hasStats;
+          const selected = selectedSkill === skillId;
+          const pending =
+            pendingAction?.kind === "growth" && pendingAction.skillId === skillId;
 
           return (
             <article
-              className={`stat-allocation-row stat-tone ${statClass(stat)}`}
-              key={stat}
+              className={`stat-allocation-row skill-growth-row stat-tone ${statClass(skill.stat)}${selected ? " is-selected" : ""}`}
+              key={skillId}
             >
               <div className="stat-allocation-topline">
                 <img
                   alt=""
                   className="stat-icon"
                   height="56"
-                  src={statIconFor(stat)}
+                  src={statIconFor(skill.stat)}
                   width="56"
                 />
-                <h3>{statLabels[stat]}</h3>
+                <h3>{skill.label}</h3>
               </div>
+              <p>{skill.description}</p>
               <dl>
                 <div>
-                  <dt>Base</dt>
+                  <dt>Class</dt>
+                  <dd>{classInfo.label}</dd>
+                </div>
+                <div>
+                  <dt>Stat</dt>
                   <dd>
-                    {base} {"->"} {base + assigned}
+                    {skill.bridgeStat
+                      ? `${statShortLabels[skill.stat]} + ${statShortLabels[skill.bridgeStat]}`
+                      : statLabels[skill.stat]}
                   </dd>
                 </div>
                 <div>
-                  <dt>Gear</dt>
-                  <dd>+{equipment}</dd>
-                </div>
-                <div>
-                  <dt>Effective</dt>
-                  <dd>
-                    {effective} {"->"} {effective + assigned}
-                  </dd>
+                  <dt>Requires</dt>
+                  <dd>{getSkillRequirementText(skillId)}</dd>
                 </div>
               </dl>
-              <div className="stat-stepper" aria-label={`${statLabels[stat]} allocation`}>
-                <button
-                  aria-label={`Remove ${statLabels[stat]} point`}
-                  disabled={busy || assigned === 0}
-                  onClick={() => adjustAllocation(stat, -1)}
-                  type="button"
-                >
-                  -
-                </button>
-                <b>{assigned}</b>
-                <button
-                  aria-label={`Add ${statLabels[stat]} point`}
-                  disabled={busy || pointsRemaining === 0}
-                  onClick={() => adjustAllocation(stat, 1)}
-                  type="button"
-                >
-                  +
-                </button>
-              </div>
+              <button
+                disabled={busy || unlocked || !canLearn}
+                onClick={() => setSelectedSkill(selected ? null : skillId)}
+                type="button"
+              >
+                {unlocked
+                  ? "Known"
+                  : !prerequisiteUnlocked
+                    ? "Locked"
+                    : !hasStats
+                      ? "Needs stats"
+                      : bundle.character.skillPoints <= 0
+                        ? "No points"
+                        : pending
+                          ? "Learning..."
+                          : selected
+                            ? "Selected"
+                            : "Pick"}
+              </button>
             </article>
           );
         })}
@@ -1222,14 +1393,20 @@ function StatAllocationPanel({
 
       <footer className="stat-allocation-actions">
         <p>
-          {allocatedPoints}/{points} assigned
+          {selectedSkill
+            ? selectedSkillCanUnlock
+              ? `${skillText[selectedSkill].label} will be learned with this allocation.`
+              : `${skillText[selectedSkill].label} needs different stats.`
+            : bundle.character.skillPoints > 0
+              ? "No skill selected. Skill points will be saved."
+              : "Confirm the stat allocation to continue."}
         </p>
         <button
           disabled={!canConfirm}
-          onClick={() => onAssignStatPoints(allocation)}
+          onClick={() => onAllocateGrowth(allocation, selectedSkill)}
           type="button"
         >
-          {pendingAction?.kind === "stat" ? "Confirming..." : "Confirm"}
+          {pendingAction?.kind === "growth" ? "Confirming..." : "Confirm"}
         </button>
       </footer>
     </section>
@@ -1526,7 +1703,8 @@ function HistoryPanel({ logs }: { logs: ChoiceLogView[] }) {
           return (
             <li key={`${log.runId}-${log.index}`}>
               L{log.level} {encounter.title}:{" "}
-              {log.success ? "success" : "failure"} with {statLabels[log.stat]}{" "}
+              {log.success ? "success" : "failure"} with{" "}
+              {skillText[log.skillId].label}{" "}
               ({log.effectiveStat}/{log.difficulty})
               {log.xpGain > 0 ? `, +${log.xpGain} XP` : ""}
               {log.leveledUp ? `, XP level ${log.xpLevelAfter}` : ""}
@@ -1726,9 +1904,11 @@ function getPendingActionLabel(action: PendingAction): string {
     case "start":
       return "Starting run...";
     case "choice":
-      return `Resolving ${statLabels[action.stat]}...`;
-    case "stat":
-      return "Confirming stats...";
+      return `Using ${skillText[action.skillId].label}...`;
+    case "growth":
+      return action.skillId
+        ? `Learning ${skillText[action.skillId].label}...`
+        : "Confirming growth...";
     case "reward":
       return action.equipNow ? "Equipping reward..." : "Claiming reward...";
     case "equip":
@@ -1739,7 +1919,7 @@ function getPendingActionLabel(action: PendingAction): string {
 function getRunStepLabel(bundle: RunBundle): string {
   if (bundle.run.phase === "encounter")
     return `${bundle.run.encounterIndex + 1}/3`;
-  if (bundle.run.phase === "stat_allocate") return "Stats";
+  if (bundle.run.phase === "growth") return "Growth";
   if (bundle.run.phase === "reward") return "Reward";
   return "Complete";
 }
@@ -1750,24 +1930,11 @@ function getPhaseLabel(phase: RunBundle["run"]["phase"]): string {
       return "the next encounter";
     case "reward":
       return "rewards";
-    case "stat_allocate":
-      return "stat allocation";
+    case "growth":
+      return "growth";
     case "complete":
       return "the end";
   }
-}
-
-function createEmptyAllocation(): StatPointAllocation {
-  return {
-    agility: 0,
-    intellect: 0,
-    spirit: 0,
-    strength: 0,
-  };
-}
-
-function getAllocatedPoints(allocation: StatPointAllocation): number {
-  return statIds.reduce((total, stat) => total + allocation[stat], 0);
 }
 
 function createRunSeed(network: GravenholdNetwork): string {
@@ -1880,7 +2047,7 @@ function getEncounterXp(encounter: CurrentEncounterView): number {
 }
 
 function getXpRequiredForLevel(xpLevel: number): number {
-  return 20 + xpLevel * 10;
+  return 8 + xpLevel * 3 + Math.floor((xpLevel * xpLevel) / 3);
 }
 
 function getXpPercent(bundle: RunBundle): number {

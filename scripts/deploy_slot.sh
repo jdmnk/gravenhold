@@ -64,6 +64,17 @@ if [[ ! -f "$DOJO_CONFIG" ]]; then
   exit 1
 fi
 
+CONFIG_SEED="$(perl -ne 'if (/^\s*seed\s*=\s*"([^"]+)"/) { print $1; exit }' "$DOJO_CONFIG")"
+if [[ -f "$MANIFEST" ]]; then
+  MANIFEST_SEED="$(jq -r '.world.seed // empty' "$MANIFEST")"
+  if [[ -n "$CONFIG_SEED" && -n "$MANIFEST_SEED" && "$CONFIG_SEED" != "$MANIFEST_SEED" ]]; then
+    ARCHIVED_MANIFEST="$ROOT/manifest_slot.${MANIFEST_SEED}.$(date -u +"%Y%m%d%H%M%S").json"
+    info "Archiving stale Slot manifest for seed $MANIFEST_SEED"
+    mv "$MANIFEST" "$ARCHIVED_MANIFEST"
+    info "Archived manifest: $ARCHIVED_MANIFEST"
+  fi
+fi
+
 cp "$DOJO_CONFIG" "$DOJO_CONFIG_BAK"
 RPC_URL="$RPC_URL" \
 SLOT_ACCOUNT_ADDRESS="$SLOT_ACCOUNT_ADDRESS" \

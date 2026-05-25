@@ -1,8 +1,17 @@
 #[starknet::interface]
 pub trait IActions<T> {
-    fn start_run(ref self: T, seed: felt252) -> felt252;
-    fn choose_option(ref self: T, run_id: felt252, stat: u8);
-    fn assign_stat_point(ref self: T, run_id: felt252, stat: u8);
+    fn start_run(ref self: T, seed: felt252, class_id: u8) -> felt252;
+    fn choose_skill(ref self: T, run_id: felt252, skill_id: u16);
+    fn allocate_growth(
+        ref self: T,
+        run_id: felt252,
+        strength_points: u16,
+        intellect_points: u16,
+        agility_points: u16,
+        spirit_points: u16,
+        skill_id: u16,
+    );
+    fn unlock_skill(ref self: T, run_id: felt252, skill_id: u16);
     fn choose_reward(ref self: T, run_id: felt252, reward_index: u8, equip_now: bool);
     fn equip_item(ref self: T, run_id: felt252, item_id: u16);
 }
@@ -15,8 +24,8 @@ pub trait IActionsView<T> {
     fn get_current_encounter(
         self: @T, run_id: felt252,
     ) -> gravenhold::models::index::CurrentEncounter;
-    fn get_choice_forecast(
-        self: @T, run_id: felt252, stat: u8,
+    fn get_skill_forecast(
+        self: @T, run_id: felt252, skill_id: u16,
     ) -> gravenhold::models::index::ChoiceForecast;
     fn get_choice_log(
         self: @T, run_id: felt252, index: u16,
@@ -36,16 +45,20 @@ pub mod actions {
     use dojo::world::WorldStorage;
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
     use gravenhold::constants::{
-        BOSS_VICTORY_HEAL, DEFAULT_NS, MAX_LEVEL, PHASE_COMPLETE, PHASE_ENCOUNTER, PHASE_REWARD,
-        PHASE_STAT_ALLOCATE, REWARD_CHOICES_PER_LEVEL, REWARD_REASON_MIXED, REWARD_REASON_RANDOM,
+        BOSS_VICTORY_HEAL, DEFAULT_NS, MAX_LEVEL, PHASE_COMPLETE, PHASE_ENCOUNTER, PHASE_GROWTH,
+        PHASE_REWARD, PHASE_SKILL_UNLOCK, REWARD_CHOICES_PER_LEVEL, REWARD_REASON_MIXED, REWARD_REASON_RANDOM,
         REWARD_REASON_STRONGEST_STAT, SIGN_NEGATIVE, SIGN_POSITIVE, SIGN_ZERO, STATUS_LOST,
         STATUS_PLAYING, STATUS_REWARD, STATUS_WON,
     };
     use gravenhold::content::data::{
-        STAT_AGILITY, STAT_INTELLECT, STAT_SPIRIT, STAT_STRENGTH, item_bonus, item_slot, item_tier,
+        class_exists, item_bonus, item_slot, item_tier, skill_class, skill_exists,
+        skill_prerequisite, skill_required_agility, skill_required_intellect,
+        skill_required_spirit, skill_required_strength, STAT_AGILITY, STAT_INTELLECT,
+        STAT_SPIRIT, STAT_STRENGTH,
     };
     use gravenhold::helpers::encounters::{
-        apply_choice_strain, current_encounter, forecast_choice, is_final_encounter, is_valid_stat,
+        apply_choice_strain, current_encounter, forecast_skill, is_final_encounter, skill_unlocked,
+        unlock_skill as unlock_character_skill,
     };
     use gravenhold::helpers::items::{
         add_inventory, equip_owned_item, inventory_has, item_exists, pick_reward_item, reward_tier,
@@ -63,7 +76,8 @@ pub mod actions {
     struct Storage {}
 
     pub mod Errors {
-        pub const INVALID_STAT: felt252 = 'Choice: invalid stat';
+        pub const INVALID_CLASS: felt252 = 'Class: invalid';
+        pub const INVALID_SKILL: felt252 = 'Skill: invalid';
         pub const NOT_PLAYING: felt252 = 'Run: not playing';
         pub const NOT_ENCOUNTER: felt252 = 'Run: not encounter';
         pub const NOT_REWARD: felt252 = 'Run: not reward';
@@ -71,22 +85,14 @@ pub mod actions {
         pub const BAD_ITEM: felt252 = 'Item: invalid';
         pub const ITEM_NOT_OWNED: felt252 = 'Item: not owned';
         pub const RUN_LOST: felt252 = 'Run: lost';
-        pub const NO_STAT_POINTS: felt252 = 'Stats: no points';
-        pub const NOT_STAT_ALLOCATE: felt252 = 'Run: not stat alloc';
-    }
-
-    fn apply_stat_point(mut character: Character, stat: u8) -> Character {
-        if stat == STAT_STRENGTH {
-            character.strength += 1;
-        } else if stat == STAT_INTELLECT {
-            character.intellect += 1;
-        } else if stat == STAT_AGILITY {
-            character.agility += 1;
-        } else if stat == STAT_SPIRIT {
-            character.spirit += 1;
-        }
-
-        character
+        pub const NO_SKILL_POINTS: felt252 = 'Skills: no points';
+        pub const BAD_STAT_POINTS: felt252 = 'Stats: bad points';
+        pub const LOW_STATS: felt252 = 'Skill: stats low';
+        pub const NOT_SKILL_UNLOCK: felt252 = 'Run: not skill unlock';
+        pub const SKILL_LOCKED: felt252 = 'Skill: locked';
+        pub const SKILL_KNOWN: felt252 = 'Skill: known';
+        pub const SKILL_PREREQ_LOCKED: felt252 = 'Skill: prereq locked';
+        pub const WRONG_CLASS_SKILL: felt252 = 'Skill: wrong class';
     }
 
     fn status_for_phase(phase: u8) -> u8 {
@@ -114,6 +120,60 @@ pub mod actions {
         } else {
             healed
         }
+    }
+
+    fn skill_requirements_met(character: @Character, skill_id: u16) -> bool {
+        *character.strength >= skill_required_strength(skill_id)
+            && *character.intellect >= skill_required_intellect(skill_id)
+            && *character.agility >= skill_required_agility(skill_id)
+            && *character.spirit >= skill_required_spirit(skill_id)
+    }
+
+    fn apply_stat_allocations(
+        mut character: Character,
+        strength_points: u16,
+        intellect_points: u16,
+        agility_points: u16,
+        spirit_points: u16,
+    ) -> Character {
+        character.strength += strength_points;
+        character.intellect += intellect_points;
+        character.agility += agility_points;
+        character.spirit += spirit_points;
+        character.stat_points -= strength_points + intellect_points + agility_points + spirit_points;
+        character
+    }
+
+    fn apply_skill_unlock(mut character: Character, skill_id: u16) -> Character {
+        assert(skill_exists(skill_id), Errors::INVALID_SKILL);
+        assert(character.skill_points > 0, Errors::NO_SKILL_POINTS);
+        assert(skill_class(skill_id) == character.class_id, Errors::WRONG_CLASS_SKILL);
+        assert(!skill_unlocked(@character, skill_id), Errors::SKILL_KNOWN);
+        let prerequisite = skill_prerequisite(skill_id);
+        assert(
+            prerequisite == 0 || skill_unlocked(@character, prerequisite),
+            Errors::SKILL_PREREQ_LOCKED,
+        );
+        assert(skill_requirements_met(@character, skill_id), Errors::LOW_STATS);
+
+        character = unlock_character_skill(character, skill_id);
+        character.skill_points -= 1;
+        character
+    }
+
+    fn finish_growth_if_ready(mut store: Store, mut run: Run, character: @Character) {
+        if *character.stat_points == 0 {
+            let next_phase = run.pending_phase;
+            run.phase = next_phase;
+            run.status = status_for_phase(next_phase);
+            run.pending_phase = PHASE_ENCOUNTER;
+
+            if next_phase == PHASE_REWARD {
+                write_reward_offers(store, @run, character);
+            }
+        }
+
+        store.set_run(@run);
     }
 
     fn write_reward_offers(mut store: Store, run: @Run, character: @Character) {
@@ -185,7 +245,9 @@ pub mod actions {
 
     #[abi(embed_v0)]
     impl ActionsImpl of super::IActions<ContractState> {
-        fn start_run(ref self: ContractState, seed: felt252) -> felt252 {
+        fn start_run(ref self: ContractState, seed: felt252, class_id: u8) -> felt252 {
+            assert(class_exists(class_id), Errors::INVALID_CLASS);
+
             let world: WorldStorage = self.world(@DEFAULT_NS());
             let mut store = StoreTrait::new(world);
             let player = get_caller_address();
@@ -196,7 +258,7 @@ pub mod actions {
             counter.next_nonce = nonce + 1;
 
             let run: Run = RunTrait::new(run_id, player, seed, nonce);
-            let character: Character = CharacterTrait::new(run_id);
+            let character: Character = CharacterTrait::new(run_id, class_id);
 
             store.set_run(@run);
             store.set_character(@character);
@@ -206,8 +268,8 @@ pub mod actions {
             run_id
         }
 
-        fn choose_option(ref self: ContractState, run_id: felt252, stat: u8) {
-            assert(is_valid_stat(stat), Errors::INVALID_STAT);
+        fn choose_skill(ref self: ContractState, run_id: felt252, skill_id: u16) {
+            assert(skill_exists(skill_id), Errors::INVALID_SKILL);
 
             let world: WorldStorage = self.world(@DEFAULT_NS());
             let mut store = StoreTrait::new(world);
@@ -218,7 +280,11 @@ pub mod actions {
             assert(run.phase == PHASE_ENCOUNTER, Errors::NOT_ENCOUNTER);
 
             let mut character: Character = store.character(run_id);
-            let forecast: ChoiceForecast = forecast_choice(@run, @character, stat);
+            assert(skill_class(skill_id) == character.class_id, Errors::WRONG_CLASS_SKILL);
+            assert(skill_unlocked(@character, skill_id), Errors::SKILL_LOCKED);
+
+            let forecast: ChoiceForecast = forecast_skill(@run, @character, skill_id);
+            let stat = forecast.stat;
             let encounter = current_encounter(run.seed, run.level, run.encounter_index);
             let old_health = character.health;
             let old_xp_level = character.xp_level;
@@ -282,11 +348,13 @@ pub mod actions {
                 }
             }
 
-            if run.phase != PHASE_COMPLETE && character.unspent_stat_points > 0 {
+            if run.phase != PHASE_COMPLETE
+                && leveled_up
+                && (character.stat_points > 0 || character.skill_points > 0) {
                 should_write_reward = false;
                 run.pending_phase = run.phase;
                 run.status = STATUS_PLAYING;
-                run.phase = PHASE_STAT_ALLOCATE;
+                run.phase = PHASE_GROWTH;
             }
 
             if should_write_reward {
@@ -301,6 +369,7 @@ pub mod actions {
                         level: encounter.level,
                         encounter_index: encounter.encounter_index,
                         encounter_id: encounter.encounter_id,
+                        skill_id,
                         stat,
                         success: forecast.success,
                         effective_stat: forecast.effective_stat,
@@ -323,8 +392,41 @@ pub mod actions {
             store.set_run(@run);
         }
 
-        fn assign_stat_point(ref self: ContractState, run_id: felt252, stat: u8) {
-            assert(is_valid_stat(stat), Errors::INVALID_STAT);
+        fn allocate_growth(
+            ref self: ContractState,
+            run_id: felt252,
+            strength_points: u16,
+            intellect_points: u16,
+            agility_points: u16,
+            spirit_points: u16,
+            skill_id: u16,
+        ) {
+            let world: WorldStorage = self.world(@DEFAULT_NS());
+            let mut store = StoreTrait::new(world);
+            let run: Run = store.run(run_id);
+            run.assert_exists();
+            run.assert_owner(get_caller_address());
+            assert(run.status == STATUS_PLAYING, Errors::NOT_PLAYING);
+            assert(run.phase == PHASE_GROWTH, Errors::NOT_SKILL_UNLOCK);
+
+            let mut character: Character = store.character(run_id);
+            let total_stat_points = strength_points + intellect_points + agility_points
+                + spirit_points;
+            assert(total_stat_points == character.stat_points, Errors::BAD_STAT_POINTS);
+
+            character = apply_stat_allocations(
+                character, strength_points, intellect_points, agility_points, spirit_points,
+            );
+            if skill_id != 0 {
+                character = apply_skill_unlock(character, skill_id);
+            }
+
+            store.set_character(@character);
+            finish_growth_if_ready(store, run, @character);
+        }
+
+        fn unlock_skill(ref self: ContractState, run_id: felt252, skill_id: u16) {
+            assert(skill_exists(skill_id), Errors::INVALID_SKILL);
 
             let world: WorldStorage = self.world(@DEFAULT_NS());
             let mut store = StoreTrait::new(world);
@@ -332,27 +434,13 @@ pub mod actions {
             run.assert_exists();
             run.assert_owner(get_caller_address());
             assert(run.status == STATUS_PLAYING, Errors::NOT_PLAYING);
-            assert(run.phase == PHASE_STAT_ALLOCATE, Errors::NOT_STAT_ALLOCATE);
+            assert(run.phase == PHASE_SKILL_UNLOCK, Errors::NOT_SKILL_UNLOCK);
 
             let mut character: Character = store.character(run_id);
-            assert(character.unspent_stat_points > 0, Errors::NO_STAT_POINTS);
-
-            character = apply_stat_point(character, stat);
-            character.unspent_stat_points -= 1;
-
-            if character.unspent_stat_points == 0 {
-                let next_phase = run.pending_phase;
-                run.phase = next_phase;
-                run.status = status_for_phase(next_phase);
-                run.pending_phase = PHASE_ENCOUNTER;
-
-                if next_phase == PHASE_REWARD {
-                    write_reward_offers(store, @run, @character);
-                }
-            }
+            character = apply_skill_unlock(character, skill_id);
 
             store.set_character(@character);
-            store.set_run(@run);
+            finish_growth_if_ready(store, run, @character);
         }
 
         fn choose_reward(ref self: ContractState, run_id: felt252, reward_index: u8, equip_now: bool) {
@@ -439,14 +527,14 @@ pub mod actions {
             current_encounter(run.seed, run.level, run.encounter_index)
         }
 
-        fn get_choice_forecast(
-            self: @ContractState, run_id: felt252, stat: u8,
+        fn get_skill_forecast(
+            self: @ContractState, run_id: felt252, skill_id: u16,
         ) -> ChoiceForecast {
             let world: WorldStorage = self.world(@DEFAULT_NS());
             let store = StoreTrait::new(world);
             let run = store.run(run_id);
             let character = store.character(run_id);
-            forecast_choice(@run, @character, stat)
+            forecast_skill(@run, @character, skill_id)
         }
 
         fn get_choice_log(self: @ContractState, run_id: felt252, index: u16) -> ChoiceLog {

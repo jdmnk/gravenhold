@@ -2,10 +2,10 @@
 
 An onchain fantasy RPG where every choice carves your path through Gravenhold.
 
-You push through a 20-level path of encounters, earn XP, assign stat points,
-equip build-defining gear, and face boss gates that test the character you have
-been shaping. Strength, Intellect, Agility, and Spirit each offer a different
-way through the same hostile road.
+You choose a class, push through a 20-level path of encounters, earn XP, assign
+stat points, unlock class skills, equip build-defining gear, and face boss gates
+that test the character you have been shaping. Strength, Intellect, Agility, and
+Spirit anchor the rules, but the run plays through learned skills.
 
 The game runs on Starknet using Dojo and Cairo for onchain gameplay logic, with
 a Vite React client for the playable interface.
@@ -121,8 +121,11 @@ npm run dev:chain
 npm run smoke:onchain-local
 ```
 
-Gameplay and balance changes should update Cairo tests and
-[docs/new-rpg-doc.md](./docs/new-rpg-doc.md) together.
+Gameplay and balance changes should update Cairo tests,
+[docs/class-skill-progression-plan.md](./docs/class-skill-progression-plan.md),
+and
+[docs/gameplay-progression-framework.md](./docs/gameplay-progression-framework.md)
+together.
 
 ## Image Assets
 
@@ -137,9 +140,6 @@ npm run generate:images -- --category items
 Asset jobs live in `scripts/generate-assets/data/images.json`, prompts live in
 `scripts/generate-assets/lib/prompts.ts`, and generated files are saved under
 `public/assets/game`.
-
-See [docs/art-direction.md](./docs/art-direction.md) for the visual target and
-asset rules.
 
 ## Security
 

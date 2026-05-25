@@ -119,7 +119,9 @@ The script will:
 
 If model schemas changed and `sozo migrate` rejects the upgrade, bump the
 `seed` in `dojo_slot.toml` and redeploy. That creates a new world address and
-resets practice Slot state.
+resets practice Slot state. If `manifest_slot.json` still points at the old
+seed, archive or remove it before migrating; `scripts/deploy_slot.sh` does this
+automatically when it detects a seed mismatch.
 
 ## 3. Track The Slot Manifest
 

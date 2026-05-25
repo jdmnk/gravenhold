@@ -18,6 +18,8 @@ KATANA_LOG="$LOG_DIR/katana.log"
 PID_FILE="$LOG_DIR/katana.pid"
 RPC="${STARKNET_RPC_URL:-http://localhost:5050}"
 NAMESPACE="gravenhold"
+DOJO_CONFIG="$ROOT/dojo_dev.toml"
+MANIFEST="$ROOT/manifest_dev.json"
 
 command_or_asdf() {
   local name="$1"
@@ -106,6 +108,17 @@ echo "Account: $ACCOUNT"
 
 # --- 3. build + migrate ---------------------------------------------------
 
+CONFIG_SEED="$(perl -ne 'if (/^\s*seed\s*=\s*"([^"]+)"/) { print $1; exit }' "$DOJO_CONFIG")"
+if [[ -f "$MANIFEST" ]]; then
+  MANIFEST_SEED="$(jq -r '.world.seed // empty' "$MANIFEST")"
+  if [[ -n "$CONFIG_SEED" && -n "$MANIFEST_SEED" && "$CONFIG_SEED" != "$MANIFEST_SEED" ]]; then
+    ARCHIVED_MANIFEST="$ROOT/manifest_dev.${MANIFEST_SEED}.$(date -u +"%Y%m%d%H%M%S").json"
+    echo "Archiving stale dev manifest for seed $MANIFEST_SEED"
+    mv "$MANIFEST" "$ARCHIVED_MANIFEST"
+    echo "Archived manifest: $ARCHIVED_MANIFEST"
+  fi
+fi
+
 echo "Building..."
 $SOZO_CMD build
 
@@ -118,7 +131,6 @@ $SOZO_CMD migrate \
 
 # --- 4. extract addresses from manifest ----------------------------------
 
-MANIFEST="$ROOT/manifest_dev.json"
 if [[ ! -f "$MANIFEST" ]]; then
   echo "ERROR: $MANIFEST not found after migrate."
   exit 1

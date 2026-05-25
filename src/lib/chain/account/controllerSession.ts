@@ -62,14 +62,19 @@ function gravenholdSessionPolicies(network: GravenholdNetwork): SessionPolicies 
             name: "Start Run",
           },
           {
-            description: "Choose a stat option for the current encounter.",
-            entrypoint: "choose_option",
-            name: "Choose Option",
+            description: "Use a learned skill for the current encounter.",
+            entrypoint: "choose_skill",
+            name: "Choose Skill",
           },
           {
-            description: "Assign an earned stat point.",
-            entrypoint: "assign_stat_point",
-            name: "Assign Stat Point",
+            description: "Unlock a class skill.",
+            entrypoint: "unlock_skill",
+            name: "Unlock Skill",
+          },
+          {
+            description: "Assign stat points and optionally unlock a skill.",
+            entrypoint: "allocate_growth",
+            name: "Allocate Growth",
           },
           {
             description: "Choose one of the onchain reward offers.",

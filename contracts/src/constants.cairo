@@ -25,8 +25,9 @@ pub const BOSS_SUPPORT_DAMAGE_PENALTY: u16 = 1;
 pub const NORMAL_ENCOUNTER_XP_BASE: u16 = 5;
 pub const BOSS_ENCOUNTER_XP_BASE: u16 = 10;
 pub const BOSS_ENCOUNTER_XP_LEVEL_MULTIPLIER: u16 = 2;
-pub const XP_BASE_REQUIRED: u16 = 20;
-pub const XP_REQUIRED_PER_LEVEL: u16 = 10;
+pub const XP_BASE_REQUIRED: u16 = 8;
+pub const XP_REQUIRED_PER_LEVEL: u16 = 3;
+pub const SKILL_POINTS_PER_XP_LEVEL: u16 = 1;
 pub const STAT_POINTS_PER_XP_LEVEL: u16 = 1;
 
 pub const STATUS_NOT_STARTED: u8 = 0;
@@ -38,7 +39,8 @@ pub const STATUS_LOST: u8 = 4;
 pub const PHASE_ENCOUNTER: u8 = 0;
 pub const PHASE_REWARD: u8 = 1;
 pub const PHASE_COMPLETE: u8 = 2;
-pub const PHASE_STAT_ALLOCATE: u8 = 3;
+pub const PHASE_SKILL_UNLOCK: u8 = 3;
+pub const PHASE_GROWTH: u8 = 3;
 
 pub const SOURCE_FIXED: u8 = 0;
 pub const SOURCE_RANDOM: u8 = 1;

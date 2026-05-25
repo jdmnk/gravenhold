@@ -121,6 +121,24 @@ export async function chooseReward(
   return tx.transaction_hash;
 }
 
+export async function claimDrop(
+  network: GravenholdNetwork,
+  signer: GameSigner,
+  runId: bigint,
+  rewardIndex: number,
+  equipNow: boolean,
+): Promise<string> {
+  const tx = await signer.execute([
+    {
+      calldata: CallData.compile([runId, rewardIndex, equipNow ? 1 : 0]),
+      contractAddress: network.actionsAddress,
+      entrypoint: "claim_drop",
+    },
+  ]);
+  await waitForSuccess(network, tx.transaction_hash);
+  return tx.transaction_hash;
+}
+
 export async function equipItem(
   network: GravenholdNetwork,
   signer: GameSigner,

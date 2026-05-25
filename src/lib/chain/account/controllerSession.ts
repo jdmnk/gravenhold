@@ -82,6 +82,11 @@ function gravenholdSessionPolicies(network: GravenholdNetwork): SessionPolicies 
             name: "Choose Reward",
           },
           {
+            description: "Pick up an encounter drop.",
+            entrypoint: "claim_drop",
+            name: "Claim Drop",
+          },
+          {
             description: "Equip an owned item.",
             entrypoint: "equip_item",
             name: "Equip Item",

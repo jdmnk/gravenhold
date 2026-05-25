@@ -26,7 +26,7 @@ import { getNetwork, type GravenholdNetwork } from "@/lib/chain/networkConfig";
 import {
   allocateGrowth,
   chooseSkill,
-  chooseReward,
+  claimDrop,
   equipItem,
   startRun,
   type GrowthAllocation,
@@ -311,7 +311,7 @@ export default function Home() {
       async () => {
         if (!network || !session || !bundle)
           throw new Error("Run is not ready.");
-        await chooseReward(
+        await claimDrop(
           network,
           session.signer,
           bundle.run.id,
@@ -624,10 +624,11 @@ function GameConsole({
             />
           ) : null}
 
-          {showingReward ? (
-            <RewardPanel
+          {showingReward && currentText ? (
+            <DropPanel
               bundle={bundle}
               busy={busy}
+              currentText={currentText}
               latestLog={latestLog}
               pendingAction={pendingAction}
               pendingLabel={pendingLabel}
@@ -1445,9 +1446,10 @@ function GrowthPanel({
   );
 }
 
-function RewardPanel({
+function DropPanel({
   bundle,
   busy,
+  currentText,
   latestLog,
   pendingAction,
   pendingLabel,
@@ -1455,28 +1457,30 @@ function RewardPanel({
 }: {
   bundle: RunBundle;
   busy: boolean;
+  currentText: ReturnType<typeof getEncounterText>;
   latestLog: ChoiceLogView | null;
   pendingAction: PendingAction | null;
   pendingLabel: string | null;
   onReward: (reward: RewardOfferView, equipNow: boolean) => void;
 }) {
+  const current = bundle.currentEncounter!;
+  const background = encounterBackgroundFor(current.encounterId);
+
   return (
-    <section aria-label="Rewards" className="reward-panel">
+    <section aria-label="Encounter drops" className="reward-panel drop-panel">
       <div
-        className="reward-art"
-        style={{ backgroundImage: `url(${levelClearedBackground})` }}
+        className="reward-art drop-art"
+        style={{ backgroundImage: `url(${background})` }}
       >
-        <SceneEffectsLayer profile="reward" />
+        <SceneEffectsLayer profile={current.difficultyKind === "boss" ? "boss" : "reward"} />
         {pendingLabel ? <ScenePendingOverlay label={pendingLabel} /> : null}
         <div className="scene-copy reward-copy">
-          <h2>{storyText.levelClearedTitle}</h2>
-          <p>{storyText.levelClearedDescription}</p>
+          <h2>{currentText.title}</h2>
+          <p>{currentText.description}</p>
         </div>
         {latestLog ? (
           <LatestResultBadge key={choiceLogKey(latestLog)} log={latestLog} />
         ) : null}
-      </div>
-      <div className="reward-grid">
         {bundle.rewards.map((reward) => {
           const item = getItemView(bundle, reward.itemId);
           const text = getItemText(reward.itemId);
@@ -1488,31 +1492,32 @@ function RewardPanel({
           return (
             <article
               className={[
-                "reward-card",
+                "drop-pickup",
+                `drop-index-${reward.index}`,
                 "stat-tone",
                 statClass(getItemPrimaryStat(item)),
               ].join(" ")}
               key={reward.index}
-              style={{ "--reward-index": reward.index } as CSSProperties}
             >
               <ItemIcon itemId={reward.itemId} />
-              <h3>{text.name}</h3>
-              <p>
-                {slotLabels[item.slot]} / Tier {item.tier}
-              </p>
-              <p>{text.description}</p>
-              <ItemBonusList item={item} />
-              <RewardComparison
-                equippedItem={equippedItem}
-                offeredItem={item}
-                dominantStat={getDominantEffectiveStat(bundle)}
-              />
-              <div className="button-row">
+              <div>
+                <h3>{text.name}</h3>
+                <p>
+                  {slotLabels[item.slot]} / Tier {item.tier}
+                  <ItemBonusList item={item} />
+                </p>
+                <RewardComparison
+                  equippedItem={equippedItem}
+                  offeredItem={item}
+                  dominantStat={getDominantEffectiveStat(bundle)}
+                />
+              </div>
+              <div className="drop-actions">
                 <button disabled={busy} onClick={() => onReward(reward, false)} type="button">
-                  {pending ? "Taking..." : "Take"}
+                  {pending ? "Taking..." : "Pick up"}
                 </button>
                 <button disabled={busy} onClick={() => onReward(reward, true)} type="button">
-                  {pending ? "Equipping..." : "Take and equip"}
+                  {pending ? "Equipping..." : "Equip"}
                 </button>
               </div>
             </article>
@@ -1942,7 +1947,7 @@ function getPendingActionLabel(action: PendingAction): string {
         ? `Learning ${skillText[action.skillId].label}...`
         : "Confirming growth...";
     case "reward":
-      return action.equipNow ? "Equipping reward..." : "Claiming reward...";
+      return action.equipNow ? "Equipping drop..." : "Picking up drop...";
     case "equip":
       return "Equipping item...";
   }
@@ -1952,7 +1957,7 @@ function getRunStepLabel(bundle: RunBundle): string {
   if (bundle.run.phase === "encounter")
     return `${bundle.run.encounterIndex + 1}/3`;
   if (bundle.run.phase === "growth") return "Growth";
-  if (bundle.run.phase === "reward") return "Reward";
+  if (bundle.run.phase === "reward") return "Drops";
   return "Complete";
 }
 
@@ -1961,7 +1966,7 @@ function getPhaseLabel(phase: RunBundle["run"]["phase"]): string {
     case "encounter":
       return "the next encounter";
     case "reward":
-      return "rewards";
+      return "drops";
     case "growth":
       return "growth";
     case "complete":

@@ -12,6 +12,7 @@ pub trait IActions<T> {
         skill_id: u16,
     );
     fn unlock_skill(ref self: T, run_id: felt252, skill_id: u16);
+    fn claim_drop(ref self: T, run_id: felt252, reward_index: u8, equip_now: bool);
     fn choose_reward(ref self: T, run_id: felt252, reward_index: u8, equip_now: bool);
     fn equip_item(ref self: T, run_id: felt252, item_id: u16);
 }
@@ -167,33 +168,36 @@ pub mod actions {
             run.phase = next_phase;
             run.status = status_for_phase(next_phase);
             run.pending_phase = PHASE_ENCOUNTER;
-
-            if next_phase == PHASE_REWARD {
-                write_reward_offers(store, @run, character);
-            }
         }
 
         store.set_run(@run);
     }
 
-    fn write_reward_offers(mut store: Store, run: @Run, character: @Character) {
+    fn write_drop_offers(mut store: Store, run: @Run, character: @Character, boss_drop: bool) {
         let build_stat = strongest_stat(character);
         let tier = reward_tier(*run.level);
         let first_item = pick_reward_item(
-            *run.seed, *run.level, REWARD_REASON_STRONGEST_STAT, build_stat, character, 0, 0,
-        );
-        let second_item = pick_reward_item(
-            *run.seed, *run.level, REWARD_REASON_RANDOM, build_stat, character, first_item, 0,
-        );
-        let third_item = pick_reward_item(
-            *run.seed,
+            *run.seed + (*run.encounter_index).into(),
             *run.level,
-            REWARD_REASON_MIXED,
+            REWARD_REASON_STRONGEST_STAT,
             build_stat,
             character,
-            first_item,
-            second_item,
+            0,
+            0,
         );
+        let second_item = if boss_drop {
+            pick_reward_item(
+                *run.seed + (*run.encounter_index).into() + 19,
+                *run.level,
+                REWARD_REASON_MIXED,
+                build_stat,
+                character,
+                first_item,
+                0,
+            )
+        } else {
+            0
+        };
 
         store
             .set_reward_offer(
@@ -214,9 +218,9 @@ pub mod actions {
                     index: 1,
                     level: *run.level,
                     item_id: second_item,
-                    reason: REWARD_REASON_RANDOM,
+                    reason: REWARD_REASON_MIXED,
                     tier,
-                    active: true,
+                    active: boss_drop,
                 },
             );
         store
@@ -225,10 +229,10 @@ pub mod actions {
                     run_id: *run.id,
                     index: 2,
                     level: *run.level,
-                    item_id: third_item,
-                    reason: REWARD_REASON_MIXED,
+                    item_id: 0,
+                    reason: REWARD_REASON_RANDOM,
                     tier,
-                    active: true,
+                    active: false,
                 },
             );
     }
@@ -241,6 +245,80 @@ pub mod actions {
             store.set_reward_offer(@offer);
             index += 1;
         }
+    }
+
+    fn has_active_drop(store: @Store, run_id: felt252) -> bool {
+        let mut index: u8 = 0;
+        while index < REWARD_CHOICES_PER_LEVEL {
+            let offer = store.reward_offer(run_id, index);
+            if offer.active {
+                return true;
+            }
+            index += 1;
+        }
+        false
+    }
+
+    fn advance_after_drops(mut run: Run) -> Run {
+        let next_phase = run.pending_phase;
+        if is_final_encounter(run.encounter_index) {
+            run.level += 1;
+            run.encounter_index = 0;
+        } else {
+            run.encounter_index += 1;
+        }
+
+        run.status = STATUS_PLAYING;
+        run.phase = next_phase;
+        run.pending_phase = PHASE_ENCOUNTER;
+        run
+    }
+
+    fn claim_drop_impl(
+        mut store: Store,
+        caller: ContractAddress,
+        run_id: felt252,
+        reward_index: u8,
+        equip_now: bool,
+    ) {
+        let mut run: Run = store.run(run_id);
+        run.assert_exists();
+        run.assert_owner(caller);
+        assert(run.status == STATUS_REWARD && run.phase == PHASE_REWARD, Errors::NOT_REWARD);
+        assert(reward_index < REWARD_CHOICES_PER_LEVEL, Errors::BAD_REWARD);
+
+        let mut offer = store.reward_offer(run_id, reward_index);
+        assert(offer.active, Errors::BAD_REWARD);
+        assert(item_exists(offer.item_id), Errors::BAD_ITEM);
+
+        let mut character = store.character(run_id);
+        character = add_inventory(character, offer.item_id);
+        if equip_now {
+            character = equip_owned_item(character, offer.item_id);
+        }
+
+        let log_index = run.reward_count;
+        run.reward_count = log_index + 1;
+        store
+            .set_reward_log(
+                @RewardLog {
+                    run_id,
+                    index: log_index,
+                    level: offer.level,
+                    item_id: offer.item_id,
+                    equipped: equip_now,
+                },
+            );
+
+        offer.active = false;
+        store.set_reward_offer(@offer);
+
+        if !has_active_drop(@store, run_id) {
+            run = advance_after_drops(run);
+        }
+
+        store.set_character(@character);
+        store.set_run(@run);
     }
 
     #[abi(embed_v0)]
@@ -320,7 +398,7 @@ pub mod actions {
 
             let choice_index = run.choice_count;
             run.choice_count = choice_index + 1;
-            let mut should_write_reward = false;
+            let mut should_write_drops = false;
 
             if defeated_by_failure {
                 run.status = STATUS_LOST;
@@ -337,28 +415,25 @@ pub mod actions {
                     } else {
                         run.status = STATUS_REWARD;
                         run.phase = PHASE_REWARD;
-                        run.pending_phase = PHASE_REWARD;
-                        should_write_reward = true;
+                        run.pending_phase = PHASE_ENCOUNTER;
+                        should_write_drops = true;
                     }
                 } else {
-                    run.encounter_index += 1;
-                    run.status = STATUS_PLAYING;
-                    run.phase = PHASE_ENCOUNTER;
+                    run.status = STATUS_REWARD;
+                    run.phase = PHASE_REWARD;
                     run.pending_phase = PHASE_ENCOUNTER;
+                    should_write_drops = true;
                 }
             }
 
-            if run.phase != PHASE_COMPLETE
+            if should_write_drops
                 && leveled_up
                 && (character.stat_points > 0 || character.skill_points > 0) {
-                should_write_reward = false;
-                run.pending_phase = run.phase;
-                run.status = STATUS_PLAYING;
-                run.phase = PHASE_GROWTH;
+                run.pending_phase = PHASE_GROWTH;
             }
 
-            if should_write_reward {
-                write_reward_offers(store, @run, @character);
+            if should_write_drops {
+                write_drop_offers(store, @run, @character, boss_defeated);
             }
 
             store
@@ -443,48 +518,16 @@ pub mod actions {
             finish_growth_if_ready(store, run, @character);
         }
 
+        fn claim_drop(ref self: ContractState, run_id: felt252, reward_index: u8, equip_now: bool) {
+            let world: WorldStorage = self.world(@DEFAULT_NS());
+            let store = StoreTrait::new(world);
+            claim_drop_impl(store, get_caller_address(), run_id, reward_index, equip_now);
+        }
+
         fn choose_reward(ref self: ContractState, run_id: felt252, reward_index: u8, equip_now: bool) {
             let world: WorldStorage = self.world(@DEFAULT_NS());
-            let mut store = StoreTrait::new(world);
-            let mut run: Run = store.run(run_id);
-            run.assert_exists();
-            run.assert_owner(get_caller_address());
-            assert(run.status == STATUS_REWARD && run.phase == PHASE_REWARD, Errors::NOT_REWARD);
-            assert(reward_index < REWARD_CHOICES_PER_LEVEL, Errors::BAD_REWARD);
-
-            let offer = store.reward_offer(run_id, reward_index);
-            assert(offer.active, Errors::BAD_REWARD);
-            assert(item_exists(offer.item_id), Errors::BAD_ITEM);
-
-            let mut character = store.character(run_id);
-            character = add_inventory(character, offer.item_id);
-            if equip_now {
-                character = equip_owned_item(character, offer.item_id);
-            }
-
-            let log_index = run.reward_count;
-            run.reward_count = log_index + 1;
-            store
-                .set_reward_log(
-                    @RewardLog {
-                        run_id,
-                        index: log_index,
-                        level: offer.level,
-                        item_id: offer.item_id,
-                        equipped: equip_now,
-                    },
-                );
-
-            clear_reward_offers(store, run_id);
-
-            run.level += 1;
-            run.encounter_index = 0;
-            run.status = STATUS_PLAYING;
-            run.phase = PHASE_ENCOUNTER;
-            run.pending_phase = PHASE_ENCOUNTER;
-
-            store.set_character(@character);
-            store.set_run(@run);
+            let store = StoreTrait::new(world);
+            claim_drop_impl(store, get_caller_address(), run_id, reward_index, equip_now);
         }
 
         fn equip_item(ref self: ContractState, run_id: felt252, item_id: u16) {

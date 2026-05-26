@@ -90,7 +90,7 @@ export async function loadRunBundle(network: GravenholdNetwork, runId: bigint): 
     run.phase === "encounter" || run.phase === "reward"
       ? getCurrentEncounter(network, runId)
       : Promise.resolve(null),
-    run.phase === "encounter"
+    run.phase === "encounter" || run.phase === "reward"
       ? Promise.all(availableSkills.map((skillId) => getSkillForecast(network, runId, skillId)))
       : Promise.resolve(null),
     run.phase === "reward"

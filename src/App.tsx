@@ -572,13 +572,12 @@ function GameConsole({
 }) {
   const pendingLabel = pendingAction ? getPendingActionLabel(pendingAction) : null;
   const showingEncounter = Boolean(
-    bundle.run.phase === "encounter" &&
+    (bundle.run.phase === "encounter" || bundle.run.phase === "reward") &&
       bundle.currentEncounter &&
       currentText &&
-      bundle.forecasts,
+      (bundle.run.phase === "reward" || bundle.forecasts),
   );
   const showingGrowth = bundle.run.phase === "growth";
-  const showingReward = bundle.run.phase === "reward";
   const showingComplete = bundle.run.phase === "complete";
   const latestLog = getLatestChoiceLog(bundle);
   const audio = useGameAudio();
@@ -618,21 +617,11 @@ function GameConsole({
               busy={busy}
               currentText={currentText!}
               latestLog={latestLog}
-              pendingLabel={pendingLabel}
-              onChooseSkill={onChooseSkill}
-              onChoiceClick={audio.playChoiceClick}
-            />
-          ) : null}
-
-          {showingReward && currentText ? (
-            <DropPanel
-              bundle={bundle}
-              busy={busy}
-              currentText={currentText}
-              latestLog={latestLog}
               pendingAction={pendingAction}
               pendingLabel={pendingLabel}
               onReward={onReward}
+              onChooseSkill={onChooseSkill}
+              onChoiceClick={audio.playChoiceClick}
             />
           ) : null}
 
@@ -932,22 +921,28 @@ function EncounterPanel({
   busy,
   currentText,
   latestLog,
+  pendingAction,
   pendingLabel,
   onChoiceClick,
   onChooseSkill,
+  onReward,
 }: {
   bundle: RunBundle;
   busy: boolean;
   currentText: ReturnType<typeof getEncounterText>;
   latestLog: ChoiceLogView | null;
+  pendingAction: PendingAction | null;
   pendingLabel: string | null;
   onChoiceClick: () => void;
   onChooseSkill: (skillId: SkillId) => void;
+  onReward: (reward: RewardOfferView, equipNow: boolean) => void;
 }) {
   const current = bundle.currentEncounter!;
   const background = encounterBackgroundFor(current.encounterId);
   const isBoss = current.difficultyKind === "boss";
-  const forecasts = Object.values(bundle.forecasts!);
+  const showingDrops = bundle.run.phase === "reward";
+  const forecasts = bundle.forecasts ? Object.values(bundle.forecasts) : [];
+  const resolvedSkillId = showingDrops ? latestLog?.skillId : null;
 
   return (
     <section aria-label="Encounter" className="encounter-panel">
@@ -969,15 +964,29 @@ function EncounterPanel({
           <h2>{currentText.title}</h2>
           <p>{currentText.description}</p>
         </div>
+        {showingDrops
+          ? bundle.rewards.map((reward) => (
+              <DropPickup
+                bundle={bundle}
+                busy={busy}
+                key={reward.index}
+                pendingAction={pendingAction}
+                reward={reward}
+                onReward={onReward}
+              />
+            ))
+          : null}
       </div>
 
       <section aria-label="Choices" className="choice-grid">
         <h3>Choices</h3>
         {forecasts.map((forecast) => (
           <ChoiceButton
-            busy={busy}
+            busy={busy || showingDrops}
             forecast={forecast}
+            inactive={showingDrops && forecast.skillId !== resolvedSkillId}
             key={forecast.skillId}
+            resolved={showingDrops && forecast.skillId === resolvedSkillId}
             secondaryStat={getChoiceSecondaryStat(bundle, forecast)}
             text={currentText.options[forecast.stat]}
             xpGain={getEncounterXp(current)}
@@ -987,6 +996,59 @@ function EncounterPanel({
         ))}
       </section>
     </section>
+  );
+}
+
+function DropPickup({
+  bundle,
+  busy,
+  pendingAction,
+  reward,
+  onReward,
+}: {
+  bundle: RunBundle;
+  busy: boolean;
+  pendingAction: PendingAction | null;
+  reward: RewardOfferView;
+  onReward: (reward: RewardOfferView, equipNow: boolean) => void;
+}) {
+  const item = getItemView(bundle, reward.itemId);
+  const text = getItemText(reward.itemId);
+  const equippedItem = getEquippedItemForSlot(bundle, item.slot);
+  const pending =
+    pendingAction?.kind === "reward" && pendingAction.rewardIndex === reward.index;
+
+  return (
+    <article
+      className={[
+        "drop-pickup",
+        `drop-index-${reward.index}`,
+        "stat-tone",
+        statClass(getItemPrimaryStat(item)),
+      ].join(" ")}
+    >
+      <ItemIcon itemId={reward.itemId} />
+      <div>
+        <h3>{text.name}</h3>
+        <p>
+          {slotLabels[item.slot]} / Tier {item.tier}
+          <ItemBonusList item={item} />
+        </p>
+        <RewardComparison
+          equippedItem={equippedItem}
+          offeredItem={item}
+          dominantStat={getDominantEffectiveStat(bundle)}
+        />
+      </div>
+      <div className="drop-actions">
+        <button disabled={busy} onClick={() => onReward(reward, false)} type="button">
+          {pending ? "Taking..." : "Pick up"}
+        </button>
+        <button disabled={busy} onClick={() => onReward(reward, true)} type="button">
+          {pending ? "Equipping..." : "Equip"}
+        </button>
+      </div>
+    </article>
   );
 }
 
@@ -1046,6 +1108,8 @@ function EncounterDetailsPopover({
 function ChoiceButton({
   busy,
   forecast,
+  inactive = false,
+  resolved = false,
   secondaryStat,
   text,
   xpGain,
@@ -1054,6 +1118,8 @@ function ChoiceButton({
 }: {
   busy: boolean;
   forecast: ChoiceForecastView;
+  inactive?: boolean;
+  resolved?: boolean;
   secondaryStat: StatId | null;
   text: { description: string; label: string };
   xpGain: number;
@@ -1076,6 +1142,8 @@ function ChoiceButton({
         statClass(stat),
         secondaryStat ? "choice-card-dual-stat" : "",
         forecast.success ? "choice-likely" : "choice-danger",
+        resolved ? "choice-card-resolved" : "",
+        inactive ? "choice-card-muted" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -1120,14 +1188,14 @@ function ChoiceButton({
         </div>
       </dl>
       <button
-        disabled={busy}
+        disabled={busy || inactive || resolved}
         onClick={() => {
           onChoiceClick();
           onChoose(forecast.skillId);
         }}
         type="button"
       >
-        Use {skill.label}
+        {resolved ? `Used ${skill.label}` : `Use ${skill.label}`}
       </button>
     </article>
   );
@@ -1437,88 +1505,6 @@ function GrowthPanel({
           {pendingAction?.kind === "growth" ? "Confirming..." : "Confirm"}
         </button>
       </footer>
-    </section>
-  );
-}
-
-function DropPanel({
-  bundle,
-  busy,
-  currentText,
-  latestLog,
-  pendingAction,
-  pendingLabel,
-  onReward,
-}: {
-  bundle: RunBundle;
-  busy: boolean;
-  currentText: ReturnType<typeof getEncounterText>;
-  latestLog: ChoiceLogView | null;
-  pendingAction: PendingAction | null;
-  pendingLabel: string | null;
-  onReward: (reward: RewardOfferView, equipNow: boolean) => void;
-}) {
-  const current = bundle.currentEncounter!;
-  const background = encounterBackgroundFor(current.encounterId);
-
-  return (
-    <section aria-label="Encounter drops" className="reward-panel drop-panel">
-      <div
-        className="reward-art drop-art"
-        style={{ backgroundImage: `url(${background})` }}
-      >
-        <SceneEffectsLayer profile={current.difficultyKind === "boss" ? "boss" : "reward"} />
-        {pendingLabel ? <ScenePendingOverlay label={pendingLabel} /> : null}
-        <div className="scene-copy reward-copy">
-          <h2>{currentText.title}</h2>
-          <p>{currentText.description}</p>
-        </div>
-        {latestLog ? (
-          <LatestResultBadge key={choiceLogKey(latestLog)} log={latestLog} />
-        ) : null}
-        {bundle.rewards.map((reward) => {
-          const item = getItemView(bundle, reward.itemId);
-          const text = getItemText(reward.itemId);
-          const equippedItem = getEquippedItemForSlot(bundle, item.slot);
-          const pending =
-            pendingAction?.kind === "reward" &&
-            pendingAction.rewardIndex === reward.index;
-
-          return (
-            <article
-              className={[
-                "drop-pickup",
-                `drop-index-${reward.index}`,
-                "stat-tone",
-                statClass(getItemPrimaryStat(item)),
-              ].join(" ")}
-              key={reward.index}
-            >
-              <ItemIcon itemId={reward.itemId} />
-              <div>
-                <h3>{text.name}</h3>
-                <p>
-                  {slotLabels[item.slot]} / Tier {item.tier}
-                  <ItemBonusList item={item} />
-                </p>
-                <RewardComparison
-                  equippedItem={equippedItem}
-                  offeredItem={item}
-                  dominantStat={getDominantEffectiveStat(bundle)}
-                />
-              </div>
-              <div className="drop-actions">
-                <button disabled={busy} onClick={() => onReward(reward, false)} type="button">
-                  {pending ? "Taking..." : "Pick up"}
-                </button>
-                <button disabled={busy} onClick={() => onReward(reward, true)} type="button">
-                  {pending ? "Equipping..." : "Equip"}
-                </button>
-              </div>
-            </article>
-          );
-        })}
-      </div>
     </section>
   );
 }

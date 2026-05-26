@@ -1417,9 +1417,39 @@ img {
     0 5px 0 rgba(0, 0, 0, 0.26);
 }
 
+.choice-card-resolved {
+  border-color: #ffd37a;
+  box-shadow: inset 0 0 0 2px rgba(255, 211, 122, 0.2);
+  filter: brightness(1.08);
+}
+
+.choice-card-muted {
+  opacity: 0.46;
+  filter: grayscale(0.65);
+}
+
+.choice-card-muted:hover,
+.choice-card-muted:focus-within {
+  box-shadow: none;
+  filter: grayscale(0.65);
+  transform: none;
+}
+
+.choice-card-resolved:hover,
+.choice-card-resolved:focus-within {
+  transform: none;
+}
+
 .choice-card:hover .stat-icon,
 .choice-card:focus-within .stat-icon {
   transform: translateY(-1px);
+}
+
+.choice-card-muted:hover .stat-icon,
+.choice-card-muted:focus-within .stat-icon,
+.choice-card-resolved:hover .stat-icon,
+.choice-card-resolved:focus-within .stat-icon {
+  transform: none;
 }
 
 .choice-card-dual-stat {
@@ -1498,6 +1528,11 @@ img {
 .choice-card-dual-stat.choice-danger,
 .choice-card-dual-stat.choice-likely {
   border-color: transparent;
+}
+
+.choice-card-dual-stat.choice-card-resolved {
+  border-color: #ffd37a;
+  border-image: none;
 }
 
 .choice-card button {

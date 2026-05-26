@@ -756,7 +756,7 @@ img {
 }
 
 .options-popover {
-  z-index: 20;
+  z-index: 100;
   width: min(460px, calc(100vw - 20px));
   max-height: min(680px, calc(100vh - 28px));
   overflow: auto;
@@ -1722,7 +1722,7 @@ img {
 
 .character-panel {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 8px;
   height: 100%;
   min-height: 0;
@@ -1758,15 +1758,22 @@ img {
   list-style: none;
 }
 
-.build-skill-list li {
+.build-skill-list li,
+.build-stat-list li {
   display: grid;
-  grid-template-columns: 28px 1fr auto;
   align-items: center;
   gap: 6px;
   padding: 4px 6px;
-  border: 1px solid #3a2a20;
-  background: rgba(12, 9, 7, 0.42);
+  border: 1px solid var(--stat-color);
+  color: #c9aa87;
+  background:
+    linear-gradient(var(--stat-surface), var(--stat-surface)),
+    rgba(12, 9, 7, 0.42);
   font-size: 17px;
+}
+
+.build-skill-list li {
+  grid-template-columns: 28px 1fr auto;
 }
 
 .build-skill-stat {
@@ -1775,22 +1782,24 @@ img {
 }
 
 .build-stat-list li {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 6px;
-  border: 1px solid #3a2a20;
-  background: rgba(12, 9, 7, 0.42);
-  font-size: 17px;
+  grid-template-columns: 28px 1fr auto auto;
+}
+
+.build-stat-list li > span:first-of-type {
+  color: var(--stat-color);
+}
+
+.build-stat-list li b {
+  color: var(--stat-color);
+  text-align: right;
 }
 
 .build-stat-primary {
-  outline: 1px solid rgba(255, 211, 122, 0.35);
+  box-shadow: inset 0 0 0 1px var(--stat-color);
 }
 
-.build-strain {
-  color: #d98a6a;
+.build-stat-detail {
+  color: #bfa083;
   font-size: 15px;
 }
 
@@ -1802,11 +1811,11 @@ img {
 .boss-support-banner,
 .narrative-beat {
   position: relative;
-  z-index: 2;
-  margin: 8px 10px 0;
+  z-index: 1;
+  margin: 0 0 8px;
   padding: 8px 10px;
   border: 2px solid #49382a;
-  background: rgba(12, 9, 7, 0.82);
+  background: rgba(12, 9, 7, 0.92);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
 }
 
@@ -2030,7 +2039,7 @@ img {
 }
 
 .encounter-details-popover {
-  z-index: 30;
+  z-index: 100;
   min-width: 170px;
   padding: 10px;
   border: 2px solid #604631;
@@ -2071,7 +2080,7 @@ img {
 }
 
 .game-tooltip {
-  z-index: 30;
+  z-index: 100;
   max-width: 260px;
   padding: 8px 10px;
   border: 2px solid #604631;

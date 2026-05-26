@@ -7,30 +7,15 @@ import {
 import {
   getDominantEffectiveStat,
   getEffectiveStat,
+  getEquipmentStatBonus,
 } from "@/lib/game/stats";
+import { statClass, statIconFor } from "@/lib/game/statUi";
 import {
   classText,
   isSkillUnlocked,
   skillText,
   skillsForClass,
 } from "@/lib/rpgContent/classes";
-
-function statIconFor(stat: (typeof statIds)[number]): string {
-  switch (stat) {
-    case "strength":
-      return "/assets/game/ui/str-icon.png";
-    case "intellect":
-      return "/assets/game/ui/intellect-icon.png";
-    case "agility":
-      return "/assets/game/ui/agi-icon.png";
-    case "spirit":
-      return "/assets/game/ui/spirit-icon.png";
-  }
-}
-
-function statClass(stat: (typeof statIds)[number]): string {
-  return `stat-${stat}`;
-}
 
 export function BuildPanel({ bundle }: { bundle: RunBundle }) {
   const classInfo = classText[bundle.character.classId];
@@ -74,9 +59,11 @@ export function BuildPanel({ bundle }: { bundle: RunBundle }) {
       </div>
 
       <div className="build-section">
-        <h3>Effective stats</h3>
+        <h3>Stats</h3>
         <ul className="build-stat-list">
           {statIds.map((stat) => {
+            const base = bundle.character.baseStats[stat];
+            const equipment = getEquipmentStatBonus(bundle, stat);
             const effective = getEffectiveStat(bundle, stat);
             const strain = bundle.character.strain[stat];
             return (
@@ -90,9 +77,20 @@ export function BuildPanel({ bundle }: { bundle: RunBundle }) {
                   .join(" ")}
                 key={stat}
               >
+                <img
+                  alt=""
+                  className="stat-icon stat-icon-small"
+                  height="28"
+                  src={statIconFor(stat)}
+                  width="28"
+                />
                 <span>{statLabels[stat]}</span>
                 <b>{effective}</b>
-                {strain > 0 ? <span className="build-strain">strain {strain}</span> : null}
+                <span className="build-stat-detail">
+                  {base}
+                  {equipment > 0 ? ` +${equipment}` : ""}
+                  {strain > 0 ? ` / strain ${strain}` : ""}
+                </span>
               </li>
             );
           })}

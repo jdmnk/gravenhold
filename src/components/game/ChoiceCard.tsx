@@ -1,8 +1,6 @@
 import { type CSSProperties } from "react";
 
 import {
-  formatApproach,
-  formatApproachDetail,
   formatCheckMargin,
   formatForecastRead,
   formatStrainOnStat,
@@ -82,21 +80,12 @@ export function ChoiceCard({
         <div>
           <dt>Check</dt>
           <dd>
-            {forecast.effectiveStat}/{forecast.difficulty} (
-            {formatCheckMargin(margin)})
+            {forecast.effectiveStat}/{forecast.difficulty} ({formatCheckMargin(margin)})
           </dd>
         </div>
         <div>
           <dt>Read</dt>
           <dd>{formatForecastRead(forecast)}</dd>
-        </div>
-        <div>
-          <dt>Approach</dt>
-          <dd>{formatApproach(forecast.approach)}</dd>
-        </div>
-        <div>
-          <dt>Fit</dt>
-          <dd>{formatApproachDetail(forecast)}</dd>
         </div>
         <div>
           <dt>Change</dt>

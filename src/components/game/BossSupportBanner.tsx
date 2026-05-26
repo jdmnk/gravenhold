@@ -29,21 +29,16 @@ export function BossSupportBanner({
     >
       <b>Boss gate</b>
       <p>
-        Keep your second-highest stat at {forecast.bossSupportRequired}+ to soften
-        the fight. {statShortLabels[supportStat]} is {supportValue}
-        {meetsSupport
-          ? " — ready."
-          : ` — ${shortfall} short.`}
+        {statShortLabels[supportStat]} {supportValue}/{forecast.bossSupportRequired}
+        {meetsSupport ? " — ready" : ` — ${shortfall} short`}
+        {forecast.bossSupportDifficultyAmount > 0
+          ? ` / +${forecast.bossSupportDifficultyAmount} diff`
+          : ""}
+        {forecast.bossSupportDamageAmount > 0
+          ? `, +${forecast.bossSupportDamageAmount} fail dmg`
+          : ""}
+        .
       </p>
-      {forecast.bossSupportDifficultyAmount > 0 ? (
-        <p className="boss-support-penalty">
-          Underprepared: +{forecast.bossSupportDifficultyAmount} difficulty
-          {forecast.bossSupportDamageAmount > 0
-            ? `, +${forecast.bossSupportDamageAmount} failure damage`
-            : ""}
-          .
-        </p>
-      ) : null}
     </aside>
   );
 }

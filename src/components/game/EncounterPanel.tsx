@@ -232,6 +232,10 @@ export function EncounterPanel({
 
   return (
     <section aria-label="Encounter" className="encounter-panel">
+      <NarrativeBeatBanner bundle={bundle} latestLog={latestLog} />
+      {forecasts[0] ? (
+        <BossSupportBanner bundle={bundle} forecast={forecasts[0]} />
+      ) : null}
       <div
         className="encounter-art"
         style={{ backgroundImage: `url(${background})` }}
@@ -250,10 +254,6 @@ export function EncounterPanel({
           <h2>{currentText.title}</h2>
           <p>{currentText.description}</p>
         </div>
-        <NarrativeBeatBanner bundle={bundle} latestLog={latestLog} />
-        {forecasts[0] ? (
-          <BossSupportBanner bundle={bundle} forecast={forecasts[0]} />
-        ) : null}
         {showingDrops
           ? bundle.rewards.map((reward) => (
               <DropPickup

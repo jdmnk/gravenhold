@@ -6,7 +6,6 @@ import {
   equipmentSlots,
   slotLabels,
   statIds,
-  statLabels,
   statShortLabels,
   type EquipmentSlot,
   type ItemView,
@@ -14,7 +13,6 @@ import {
   type StatId,
 } from "@/lib/chain/state";
 import { itemIconFor } from "@/lib/assets/gameAssets";
-import { getEquipmentStatBonus } from "@/lib/game/stats";
 import { getItemText, getItemView } from "@/lib/game/runDisplay";
 import { statClass } from "@/lib/game/statUi";
 import { type PendingAction } from "@/lib/game/pendingAction";
@@ -35,7 +33,6 @@ export function CharacterPanel({
   return (
     <section aria-label="Character" className="character-panel">
       <BuildPanel bundle={bundle} />
-      <StatsPanel bundle={bundle} />
       <GearPanel
         bundle={bundle}
         busy={busy}
@@ -43,37 +40,6 @@ export function CharacterPanel({
         pendingAction={pendingAction}
         onEquip={onEquip}
       />
-    </section>
-  );
-}
-
-function StatsPanel({ bundle }: { bundle: RunBundle }) {
-  return (
-    <section aria-label="Stats" className="stone-panel stats-panel">
-      <h2>Status</h2>
-      <table>
-        <tbody>
-          {statIds.map((stat) => {
-            const base = bundle.character.baseStats[stat];
-            const equipment = getEquipmentStatBonus(bundle, stat);
-            const strain = bundle.character.strain[stat];
-
-            return (
-              <tr className={`stat-tone ${statClass(stat)}`} key={stat}>
-                <th scope="row">{statLabels[stat]}</th>
-                <td>
-                  <b>{base + equipment}</b>
-                </td>
-                <td>
-                  base {base}
-                  {equipment > 0 ? `, equipment +${equipment}` : ""}
-                  {strain > 0 ? `, strain ${strain}` : ""}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
     </section>
   );
 }

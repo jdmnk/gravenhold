@@ -1177,6 +1177,20 @@ img {
   padding-top: 10px;
 }
 
+.growth-lane-group {
+  display: contents;
+}
+
+.growth-lane-header {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 6px 0 2px;
+  color: #d5b68b;
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .skill-growth-row h3 {
   display: flex;
   flex-wrap: wrap;
@@ -1535,6 +1549,36 @@ img {
   border-image: none;
 }
 
+.choice-card.check-band-very-risky {
+  --check-band-color: #8b3a32;
+}
+
+.choice-card.check-band-risky {
+  --check-band-color: #a04a38;
+}
+
+.choice-card.check-band-even {
+  --check-band-color: #9d7e66;
+}
+
+.choice-card.check-band-favored {
+  --check-band-color: #7a9a5a;
+}
+
+.choice-card.check-band-strong {
+  --check-band-color: #5a9a4a;
+}
+
+.choice-card.check-band-very-risky:not(.choice-card-dual-stat),
+.choice-card.check-band-risky:not(.choice-card-dual-stat) {
+  box-shadow: inset 0 0 0 1px var(--check-band-color);
+}
+
+.choice-card.check-band-favored:not(.choice-card-dual-stat),
+.choice-card.check-band-strong:not(.choice-card-dual-stat) {
+  box-shadow: inset 0 0 0 1px var(--check-band-color);
+}
+
 .choice-card button {
   align-self: end;
   width: 100%;
@@ -1678,10 +1722,142 @@ img {
 
 .character-panel {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 8px;
   height: 100%;
   min-height: 0;
+}
+
+.build-panel {
+  padding: 12px;
+}
+
+.build-class p {
+  margin-top: 4px;
+  color: #c7a685;
+  font-size: 17px;
+}
+
+.build-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #3a2a20;
+}
+
+.build-section h3 {
+  color: #f5d19d;
+  font-size: 20px;
+}
+
+.build-skill-list,
+.build-stat-list {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.build-skill-list li {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid #3a2a20;
+  background: rgba(12, 9, 7, 0.42);
+  font-size: 17px;
+}
+
+.build-skill-stat {
+  color: var(--stat-color);
+  font-size: 16px;
+}
+
+.build-stat-list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border: 1px solid #3a2a20;
+  background: rgba(12, 9, 7, 0.42);
+  font-size: 17px;
+}
+
+.build-stat-primary {
+  outline: 1px solid rgba(255, 211, 122, 0.35);
+}
+
+.build-strain {
+  color: #d98a6a;
+  font-size: 15px;
+}
+
+.stat-icon-small {
+  width: 28px;
+  height: 28px;
+}
+
+.boss-support-banner,
+.narrative-beat {
+  position: relative;
+  z-index: 2;
+  margin: 8px 10px 0;
+  padding: 8px 10px;
+  border: 2px solid #49382a;
+  background: rgba(12, 9, 7, 0.82);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.boss-support-banner p,
+.narrative-beat p {
+  margin-top: 4px;
+  color: #d8bc93;
+  font-size: 17px;
+}
+
+.boss-support-ready {
+  border-color: #4f6a3f;
+}
+
+.boss-support-low {
+  border-color: #7a4030;
+}
+
+.boss-support-penalty {
+  color: #e0a08a !important;
+}
+
+.narrative-beat {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.narrative-beat-act_intro {
+  border-color: #6a5430;
+}
+
+.narrative-beat-boss_defeated {
+  border-color: #7a6030;
+}
+
+.narrative-beat-level_cleared {
+  border-color: #4a5a40;
+}
+
+.choice-strain {
+  margin-top: 4px;
+  color: #d98a6a;
+  font-size: 16px;
+}
+
+.intro-resume-note {
+  max-width: 36rem;
+  color: #c7a685;
+  font-size: 17px;
 }
 
 .stats-panel,

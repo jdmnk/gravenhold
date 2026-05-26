@@ -22,18 +22,20 @@ export const howItWorksScreens: HowItWorksScreen[] = [
       "Every skill compares its effective stat against the encounter difficulty. The card tells you if it should pass and what will change.",
     cues: [
       "Effective stat is base stat plus equipped gear.",
+      "The Read shows how strong the check is: Very risky to Strong.",
       "Every encounter grants XP after it resolves.",
       "Failing costs health.",
       "Repeating one stat builds strain, which can make later checks harsher.",
     ],
   },
   {
-    title: "Shape your build between gates",
+    title: "Loot, grow, then push onward",
     detail:
-      "When XP levels you up, spend the skill point before continuing. After clearing a path level, choose one reward.",
+      "After each encounter, pick up any drops that appear. If XP levels you up, assign stat points and optionally learn a skill before the next fight.",
     cues: [
+      "Drops appear on the scene — pick them up or equip immediately.",
       "Unlock class skills to expand your options.",
-      "A support stat helps survive boss gates.",
+      "Your second-highest stat helps survive boss gates.",
       "Bosses wait at levels 5, 10, 15, and 20.",
       "Clear level 20 before your health runs out.",
     ],

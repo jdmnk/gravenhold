@@ -4,7 +4,7 @@ import { ScenePendingOverlay } from "@/components/game/EncounterPanel";
 import { statIds, statLabels, type RunBundle, type StatId } from "@/lib/chain/state";
 import { type GrowthAllocation } from "@/lib/chain/systems";
 import { type PendingAction } from "@/lib/game/pendingAction";
-import { getPhaseLabel, getStatGrowthDescription } from "@/lib/game/runDisplay";
+import { getPhaseLabel } from "@/lib/game/runDisplay";
 import { skillLaneLabel } from "@/lib/game/skillLanes";
 import { StatChip, statClass, statIconFor } from "@/lib/game/statUi";
 import {
@@ -150,74 +150,78 @@ export function GrowthPanel({
       <header className="stat-allocation-header">
         <div>
           <h2>
-            {classInfo.label} Level {bundle.character.xpLevel}
+            {classInfo.label} · L{bundle.character.xpLevel}
           </h2>
           <p>
-            Assign {bundle.character.statPoints} stat point
-            {bundle.character.statPoints === 1 ? "" : "s"}. Skill points can be spent now or saved.
+            Spend {bundle.character.statPoints} stat
+            {bundle.character.statPoints === 1 ? "" : "s"}
+            {bundle.character.skillPoints > 0
+              ? ` · ${bundle.character.skillPoints} skill optional`
+              : ""}
           </p>
         </div>
         <div className="xp-readout">
           <b>
-            {remainingPoints} stat / {bundle.character.skillPoints} skill
+            {remainingPoints} stat left
           </b>
-          <p>then continue to {nextStep}</p>
+          <p>Next: {nextStep}</p>
         </div>
       </header>
 
-      <div className="stat-allocation-list growth-stat-grid">
-        {statIds.map((stat) => (
-          <article
-            className={`stat-allocation-row stat-growth-row stat-tone ${statClass(stat)}`}
-            key={stat}
-          >
-            <div className="stat-allocation-topline">
-              <img
-                alt=""
-                className="stat-icon"
-                height="56"
-                src={statIconFor(stat)}
-                width="56"
-              />
-              <h3>{statLabels[stat]}</h3>
-            </div>
-            <p>{getStatGrowthDescription(stat)}</p>
-            <dl>
-              <div>
-                <dt>Current</dt>
-                <dd>{bundle.character.baseStats[stat]}</dd>
+      <div className="growth-panel-body">
+        <div className="stat-allocation-list growth-stat-grid">
+          {statIds.map((stat) => (
+            <article
+              className={`stat-allocation-row stat-growth-row stat-tone ${statClass(stat)}`}
+              key={stat}
+            >
+              <div className="stat-allocation-topline">
+                <img
+                  alt=""
+                  className="stat-icon"
+                  height="32"
+                  src={statIconFor(stat)}
+                  width="32"
+                />
+                <h3>{statLabels[stat]}</h3>
               </div>
-              <div>
-                <dt>Next</dt>
-                <dd>{projectedStats[stat]}</dd>
+              <dl className="growth-stat-readout">
+                <div>
+                  <dt>Now</dt>
+                  <dd>{bundle.character.baseStats[stat]}</dd>
+                </div>
+                <div>
+                  <dt>Next</dt>
+                  <dd>{projectedStats[stat]}</dd>
+                </div>
+              </dl>
+              <div className="stat-stepper" aria-label={`${statLabels[stat]} allocation`}>
+                <button
+                  disabled={busy || allocation[stat] <= 0}
+                  onClick={() => updateAllocation(stat, -1)}
+                  type="button"
+                >
+                  -
+                </button>
+                <b>{allocation[stat]}</b>
+                <button
+                  disabled={busy || remainingPoints <= 0}
+                  onClick={() => updateAllocation(stat, 1)}
+                  type="button"
+                >
+                  +
+                </button>
               </div>
-            </dl>
-            <div className="stat-stepper" aria-label={`${statLabels[stat]} allocation`}>
-              <button
-                disabled={busy || allocation[stat] <= 0}
-                onClick={() => updateAllocation(stat, -1)}
-                type="button"
-              >
-                -
-              </button>
-              <b>{allocation[stat]}</b>
-              <button
-                disabled={busy || remainingPoints <= 0}
-                onClick={() => updateAllocation(stat, 1)}
-                type="button"
-              >
-                +
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
+            </article>
+          ))}
+        </div>
 
-      <div className="stat-allocation-list skill-growth-list skill-growth-grid">
-        {skillsByLane.map(([tier, laneSkills]) => (
-          <div className="growth-lane-group" key={tier}>
-            <h3 className="growth-lane-header">{skillLaneLabel(tier)}</h3>
-            {laneSkills.map((skillId) => {
+        <div className="skill-growth-list">
+          {skillsByLane.map(([tier, laneSkills]) => (
+            <section className="growth-lane-group" key={tier}>
+              <h3 className="growth-lane-header">{skillLaneLabel(tier)}</h3>
+              <div className="growth-lane-skills">
+                {laneSkills.map((skillId) => {
               const skill = skillText[skillId];
               const unlocked = isSkillUnlocked(
                 bundle.character.unlockedSkillsBits,
@@ -253,31 +257,17 @@ export function GrowthPanel({
                     <img
                       alt=""
                       className="stat-icon"
-                      height="56"
+                      height="32"
                       src={statIconFor(skill.stat)}
-                      width="56"
+                      width="32"
                     />
-                    <h3>
-                      {skill.label}
-                      <span className="skill-class-badge">{classInfo.label}</span>
-                    </h3>
+                    <h3>{skill.label}</h3>
                   </div>
-                  <p>{skill.description}</p>
-                  <dl>
-                    <div>
-                      <dt>Stat</dt>
-                      <dd className="stat-chip-list">
-                        <StatChip stat={skill.stat} />
-                        {skill.bridgeStat ? <StatChip stat={skill.bridgeStat} /> : null}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Requires</dt>
-                      <dd className="stat-requirement-list">
-                        <SkillRequirementList skillId={skillId} />
-                      </dd>
-                    </div>
-                  </dl>
+                  <div className="skill-growth-meta">
+                    <StatChip stat={skill.stat} />
+                    {skill.bridgeStat ? <StatChip stat={skill.bridgeStat} /> : null}
+                    <SkillRequirementList skillId={skillId} />
+                  </div>
                   <button
                     disabled={busy || unlocked || !canLearn}
                     onClick={() => setSelectedSkill(selected ? null : skillId)}
@@ -300,8 +290,10 @@ export function GrowthPanel({
                 </article>
               );
             })}
-          </div>
-        ))}
+              </div>
+            </section>
+          ))}
+        </div>
       </div>
 
       <footer className="stat-allocation-actions">

@@ -1,7 +1,7 @@
 import * as Popover from "@radix-ui/react-popover";
 
 import { BossSupportBanner } from "@/components/game/BossSupportBanner";
-import { ChoiceCard } from "@/components/game/ChoiceCard";
+import { SkillAction } from "@/components/game/SkillAction";
 import {
   ItemBonusList,
   RewardComparison,
@@ -236,54 +236,74 @@ export function EncounterPanel({
       {forecasts[0] ? (
         <BossSupportBanner bundle={bundle} forecast={forecasts[0]} />
       ) : null}
-      <div
-        className="encounter-art"
-        style={{ backgroundImage: `url(${background})` }}
-      >
-        {isBoss ? <SceneEffectsLayer profile="boss" /> : null}
-        {latestLog ? (
-          <LatestResultBadge key={choiceLogKey(latestLog)} log={latestLog} />
-        ) : null}
-        <EncounterDetailsPopover
-          baseDifficulty={current.baseDifficulty}
-          category={encounterCategoryLabels[current.category]}
-          difficulty={encounterDifficultyLabels[current.difficultyKind]}
-        />
-        {pendingLabel ? <ScenePendingOverlay label={pendingLabel} /> : null}
-        <div className="scene-copy encounter-copy">
-          <h2>{currentText.title}</h2>
-          <p>{currentText.description}</p>
-        </div>
-        {showingDrops
-          ? bundle.rewards.map((reward) => (
-              <DropPickup
-                bundle={bundle}
-                busy={busy}
-                key={reward.index}
-                pendingAction={pendingAction}
-                reward={reward}
-                onReward={onReward}
-              />
-            ))
-          : null}
-      </div>
-
-      <section aria-label="Choices" className="choice-grid">
-        <h3>Choices</h3>
-        {forecasts.map((forecast) => (
-          <ChoiceCard
-            busy={busy || showingDrops}
-            forecast={forecast}
-            inactive={showingDrops && forecast.skillId !== resolvedSkillId}
-            key={forecast.skillId}
-            resolved={showingDrops && forecast.skillId === resolvedSkillId}
-            secondaryStat={getChoiceSecondaryStat(bundle, forecast)}
-            xpGain={getEncounterXp(current)}
-            onChoiceClick={onChoiceClick}
-            onChoose={onChooseSkill}
+      <div className="encounter-stage">
+        <div
+          className="encounter-art"
+          style={{ backgroundImage: `url(${background})` }}
+        >
+          {isBoss ? <SceneEffectsLayer profile="boss" /> : null}
+          {latestLog ? (
+            <LatestResultBadge key={choiceLogKey(latestLog)} log={latestLog} />
+          ) : null}
+          <EncounterDetailsPopover
+            baseDifficulty={current.baseDifficulty}
+            category={encounterCategoryLabels[current.category]}
+            difficulty={encounterDifficultyLabels[current.difficultyKind]}
           />
-        ))}
-      </section>
+          {pendingLabel ? <ScenePendingOverlay label={pendingLabel} /> : null}
+          <div className="scene-copy encounter-copy">
+            <h2>{currentText.title}</h2>
+            <p>{currentText.description}</p>
+          </div>
+          {showingDrops
+            ? bundle.rewards.map((reward) => (
+                <DropPickup
+                  bundle={bundle}
+                  busy={busy}
+                  key={reward.index}
+                  pendingAction={pendingAction}
+                  reward={reward}
+                  onReward={onReward}
+                />
+              ))
+            : null}
+        </div>
+
+        {!showingDrops && forecasts.length > 0 ? (
+          <div aria-label="Skill choices" className="encounter-action-bar" role="group">
+            {forecasts.map((forecast) => (
+              <SkillAction
+                busy={busy}
+                forecast={forecast}
+                key={forecast.skillId}
+                secondaryStat={getChoiceSecondaryStat(bundle, forecast)}
+                xpGain={getEncounterXp(current)}
+                onChoiceClick={onChoiceClick}
+                onChoose={onChooseSkill}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        {showingDrops && resolvedSkillId ? (
+          <div aria-label="Resolved skill" className="encounter-action-bar encounter-action-bar--resolved" role="group">
+            {forecasts
+              .filter((forecast) => forecast.skillId === resolvedSkillId)
+              .map((forecast) => (
+                <SkillAction
+                  busy={busy}
+                  forecast={forecast}
+                  key={forecast.skillId}
+                  resolved
+                  secondaryStat={getChoiceSecondaryStat(bundle, forecast)}
+                  xpGain={getEncounterXp(current)}
+                  onChoiceClick={onChoiceClick}
+                  onChoose={onChooseSkill}
+                />
+              ))}
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }

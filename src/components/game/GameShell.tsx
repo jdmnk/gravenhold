@@ -1,9 +1,10 @@
 import * as Popover from "@radix-ui/react-popover";
 
+import { CharacterPanel } from "@/components/game/CharacterColumn";
 import { CompletePanel } from "@/components/game/CompletePanel";
-import { CharacterPanel, DescriptionTooltip } from "@/components/game/CharacterColumn";
 import { EncounterPanel } from "@/components/game/EncounterPanel";
 import { GrowthPanel } from "@/components/game/GrowthPanel";
+import { PathMapScreen } from "@/components/game/PathMapScreen";
 import { type GameSession } from "@/lib/chain/account/session";
 import { type GravenholdNetwork } from "@/lib/chain/networkConfig";
 import {
@@ -15,7 +16,6 @@ import {
 import { type GrowthAllocation } from "@/lib/chain/systems";
 import { useGameAudio } from "@/lib/audio/useGameAudio";
 import {
-  getBossEncounterId,
   getEncounterText,
   getHealthPercent,
   getLatestChoiceLog,
@@ -29,7 +29,8 @@ import {
   getPendingActionLabel,
   type PendingAction,
 } from "@/lib/game/pendingAction";
-import { skillText, type SkillId } from "@/lib/rpgContent/classes";
+import { usePathMapGate } from "@/lib/game/usePathMapGate";
+import { classText, skillText, type SkillId } from "@/lib/rpgContent/classes";
 
 export function GameConsole({
   bundle,
@@ -67,45 +68,70 @@ export function GameConsole({
   onShowIntroScreen: () => void;
 }) {
   const pendingLabel = pendingAction ? getPendingActionLabel(pendingAction) : null;
+  const phase = bundle.run.phase;
   const showingEncounter = Boolean(
-    (bundle.run.phase === "encounter" || bundle.run.phase === "reward") &&
+    (phase === "encounter" || phase === "reward") &&
       bundle.currentEncounter &&
       currentText &&
-      (bundle.run.phase === "reward" || bundle.forecasts),
+      (phase === "reward" || bundle.forecasts),
   );
-  const showingGrowth = bundle.run.phase === "growth";
-  const showingComplete = bundle.run.phase === "complete";
+  const showingGrowth = phase === "growth";
+  const showingComplete = phase === "complete";
   const latestLog = getLatestChoiceLog(bundle);
   const audio = useGameAudio();
+  const scenePhase = phase === "encounter" || phase === "reward";
+  const { dismissMap, mapTransition } = usePathMapGate(bundle);
+  const mapOpen = mapTransition !== null;
 
   return (
-    <section aria-label="Gravenhold game" className="game-shell">
-      <header className="top-strip">
-        <div className="game-mark">Gravenhold</div>
-        <RunSummary bundle={bundle} />
-        <OptionsPanel
-          bundle={bundle}
-          busy={busy}
-          logs={bundle.recentChoices}
-          network={network}
-          seedInput={seedInput}
-          session={session}
-          musicEnabled={audio.musicEnabled}
-          sfxEnabled={audio.sfxEnabled}
-          onMusicEnabledChange={audio.setMusicEnabled}
-          onRestart={onRestart}
-          onSeedInputChange={onSeedInputChange}
-          onShowHowItWorks={onShowHowItWorks}
-          onShowIntroScreen={onShowIntroScreen}
-          onSfxEnabledChange={audio.setSfxEnabled}
-        />
+    <section
+      aria-label="Gravenhold game"
+      className={["game-shell", `game-shell--${phase}`, mapOpen ? "game-shell--map" : ""]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <header className={["top-strip", scenePhase ? "top-strip--compact" : ""].filter(Boolean).join(" ")}>
+        <div className="game-mark">
+          <span className="game-mark-title">Gravenhold</span>
+          <span className="game-mark-class">{classText[bundle.character.classId].label}</span>
+        </div>
+        <RunSummary bundle={bundle} compact={scenePhase} />
+        <div className="top-strip-actions">
+          {scenePhase ? (
+            <BuildPopover
+              bundle={bundle}
+              busy={busy}
+              inventoryIds={inventoryIds}
+              pendingAction={pendingAction}
+              onEquip={onEquip}
+            />
+          ) : null}
+          <OptionsPanel
+            bundle={bundle}
+            busy={busy}
+            logs={bundle.recentChoices}
+            network={network}
+            seedInput={seedInput}
+            session={session}
+            musicEnabled={audio.musicEnabled}
+            sfxEnabled={audio.sfxEnabled}
+            onMusicEnabledChange={audio.setMusicEnabled}
+            onRestart={onRestart}
+            onSeedInputChange={onSeedInputChange}
+            onShowHowItWorks={onShowHowItWorks}
+            onShowIntroScreen={onShowIntroScreen}
+            onSfxEnabledChange={audio.setSfxEnabled}
+          />
+        </div>
       </header>
 
-      <section aria-label="Main game layout" className="game-layout">
-        <aside className="path-column">
-          <ProgressionList bundle={bundle} />
-        </aside>
-
+      <section
+        aria-hidden={mapOpen}
+        aria-label="Main game layout"
+        className={["game-layout", `game-layout--${phase}`, mapOpen ? "game-layout--hidden" : ""]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <section aria-label="Current state" className="center-column">
           {showingEncounter ? (
             <EncounterPanel
@@ -142,24 +168,67 @@ export function GameConsole({
           ) : null}
         </section>
 
-        <aside className="character-column">
-          <CharacterPanel
-            bundle={bundle}
-            busy={busy}
-            inventoryIds={inventoryIds}
-            pendingAction={pendingAction}
-            onEquip={onEquip}
-          />
-        </aside>
+        {!scenePhase && !showingComplete ? (
+          <aside className="character-column">
+            <CharacterPanel
+              bundle={bundle}
+              busy={busy}
+              inventoryIds={inventoryIds}
+              pendingAction={pendingAction}
+              onEquip={onEquip}
+            />
+          </aside>
+        ) : null}
       </section>
+
+      {mapTransition ? (
+        <PathMapScreen
+          bundle={bundle}
+          transition={mapTransition}
+          onContinue={dismissMap}
+        />
+      ) : null}
     </section>
   );
 }
 
-function RunSummary({ bundle }: { bundle: RunBundle }) {
+function RunSummary({
+  bundle,
+  compact = false,
+}: {
+  bundle: RunBundle;
+  compact?: boolean;
+}) {
   const healthPercent = getHealthPercent(bundle);
   const xpRequired = getXpRequiredForLevel(bundle.character.xpLevel);
   const xpPercent = getXpPercent(bundle);
+
+  if (compact) {
+    return (
+      <section aria-label="Run summary" className="run-summary run-summary--compact">
+        <div className="run-summary-compact-block">
+          <b>
+            L{bundle.run.level} · {getRunStepLabel(bundle)}
+          </b>
+          <p>{bundle.run.choiceCount} choices made</p>
+        </div>
+        <div className="bar-block">
+          <b>
+            HP {bundle.character.health}/{bundle.character.maxHealth}
+          </b>
+          <div className="meter" aria-hidden="true">
+            <div style={{ width: `${healthPercent}%` }} />
+          </div>
+        </div>
+        <div className="bar-block">
+          <b>XP {bundle.character.xpLevel}</b>
+          <div className="meter progress-meter" aria-hidden="true">
+            <div style={{ width: `${xpPercent}%` }} />
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section aria-label="Run summary" className="run-summary">
@@ -193,6 +262,48 @@ function RunSummary({ bundle }: { bundle: RunBundle }) {
         </div>
       </div>
     </section>
+  );
+}
+
+function BuildPopover({
+  bundle,
+  busy,
+  inventoryIds,
+  pendingAction,
+  onEquip,
+}: {
+  bundle: RunBundle;
+  busy: boolean;
+  inventoryIds: number[];
+  pendingAction: PendingAction | null;
+  onEquip: (itemId: number) => void;
+}) {
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button className="chrome-trigger build-trigger" type="button">
+          Build
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          className="build-popover"
+          collisionPadding={10}
+          side="bottom"
+          sideOffset={8}
+        >
+          <CharacterPanel
+            bundle={bundle}
+            busy={busy}
+            inventoryIds={inventoryIds}
+            pendingAction={pendingAction}
+            onEquip={onEquip}
+          />
+          <Popover.Arrow className="popover-arrow" />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 
@@ -307,81 +418,6 @@ function OptionsPanel({
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
-  );
-}
-
-function ProgressionList({ bundle }: { bundle: RunBundle }) {
-  return (
-    <section aria-label="Progression" className="stone-panel progression-panel">
-      <h2>Progression</h2>
-      <ol>
-        {Array.from({ length: 20 }, (_, index) => {
-          const level = index + 1;
-          const bossEncounterId = getBossEncounterId(level);
-          const text = getEncounterText(bossEncounterId ?? level);
-          const completed = bundle.run.status === "won" || level < bundle.run.level;
-          const current =
-            level === bundle.run.level &&
-            bundle.run.status !== "won" &&
-            bundle.run.status !== "lost";
-
-          return (
-            <li
-              aria-label={`${level}. ${text.title}${bossEncounterId ? ", boss" : ""}${current ? ", current" : ""}${completed ? ", cleared" : ""}`}
-              className={[
-                completed ? "is-cleared" : "",
-                current ? "is-current" : "",
-                bossEncounterId ? "is-boss" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              key={level}
-              title={[
-                bossEncounterId ? "Boss" : "",
-                current ? "Current" : "",
-                completed ? "Cleared" : "",
-              ]
-                .filter(Boolean)
-                .join(" / ")}
-            >
-              <strong>
-                {level}. {text.title}
-              </strong>
-              <span className="progression-markers">
-                {bossEncounterId ? (
-                  <ProgressionMarker className="marker-boss" label="Boss" />
-                ) : null}
-                {current ? (
-                  <ProgressionMarker className="marker-current" label="Current" />
-                ) : null}
-                {completed ? (
-                  <ProgressionMarker className="marker-cleared" label="Cleared" />
-                ) : null}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
-  );
-}
-
-function ProgressionMarker({
-  className,
-  label,
-}: {
-  className: string;
-  label: string;
-}) {
-  return (
-    <DescriptionTooltip content={label}>
-      <span
-        aria-label={label}
-        className={`progression-marker ${className}`}
-        role="img"
-        tabIndex={0}
-      />
-    </DescriptionTooltip>
   );
 }
 

@@ -8,17 +8,22 @@ import {
   getPathMapNodeOffsetPx,
   getPathMapSegmentState,
   isBossLevel,
+  PATH_MAP_DASH_LENGTH,
+  PATH_MAP_GAP_LENGTH,
   PATH_MAP_SEGMENT_HEIGHT_PX,
   pathMapNodeCenterX,
+  pathMapSegmentDrawMs,
+  pathMapSegmentLength,
   type PathMapSegmentState,
 } from "@/lib/game/pathMapLayout";
 import { getEncounterText } from "@/lib/game/runDisplay";
 import type { PathMapTransition } from "@/lib/game/usePathMapGate";
 
-const segmentDrawMs = 850;
 const travelLeadMs = 140;
+const screenTransitionMs = 420;
 
 type TravelPhase = "prepare" | "travel" | "complete";
+type ScreenPhase = "enter" | "shown" | "exit";
 
 type PathMapNode = {
   boss: boolean;
@@ -44,9 +49,18 @@ export function PathMapScreen({
   const nodeRefs = useRef<Map<number, HTMLLIElement>>(new Map());
   const [travelPhase, setTravelPhase] = useState<TravelPhase>("prepare");
   const [travelComplete, setTravelComplete] = useState(false);
+  const [screenPhase, setScreenPhase] = useState<ScreenPhase>("enter");
 
   const destinationText = getEncounterText(getLevelEncounterId(transition.toLevel));
   const animatesSegment = transition.fromLevel > 0;
+  const activeSegmentLength = useMemo(() => {
+    if (!animatesSegment) return 0;
+    return pathMapSegmentLength(
+      pathMapNodeCenterX(transition.fromLevel),
+      pathMapNodeCenterX(transition.toLevel),
+    );
+  }, [animatesSegment, transition.fromLevel, transition.toLevel]);
+  const segmentDrawMs = pathMapSegmentDrawMs(activeSegmentLength);
 
   const nodes = useMemo<PathMapNode[]>(
     () =>
@@ -84,8 +98,13 @@ export function PathMapScreen({
   );
 
   useEffect(() => {
+    setScreenPhase("enter");
     setTravelPhase("prepare");
     setTravelComplete(false);
+
+    const enterTimer = window.requestAnimationFrame(() => {
+      setScreenPhase("shown");
+    });
 
     const scrollToLevel = (level: number, behavior: ScrollBehavior) => {
       nodeRefs.current.get(level)?.scrollIntoView({ behavior, block: "center" });
@@ -109,13 +128,35 @@ export function PathMapScreen({
     }, completeDelay);
 
     return () => {
+      window.cancelAnimationFrame(enterTimer);
       window.clearTimeout(travelTimer);
       window.clearTimeout(completeTimer);
     };
-  }, [animatesSegment, transition.fromLevel, transition.toLevel]);
+  }, [
+    animatesSegment,
+    segmentDrawMs,
+    transition.fromLevel,
+    transition.toLevel,
+  ]);
+
+  function handleContinue() {
+    if (!travelComplete || screenPhase === "exit") return;
+    setScreenPhase("exit");
+    window.setTimeout(onContinue, screenTransitionMs);
+  }
 
   return (
-    <section aria-label="Path map" className="path-map-screen">
+    <section
+      aria-label="Path map"
+      className={[
+        "path-map-screen",
+        screenPhase === "enter" ? "is-entering" : "",
+        screenPhase === "shown" ? "is-shown" : "",
+        screenPhase === "exit" ? "is-exiting" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <div className="path-map-screen-inner">
         <header className="path-map-header">
           <p className="path-map-act">Act {actForPathLevel(transition.toLevel)}</p>
@@ -164,6 +205,7 @@ export function PathMapScreen({
                 >
                   {previous && segmentState ? (
                     <PathMapSegment
+                      drawMs={segmentDrawMs}
                       lowerLevel={node.level}
                       state={segmentState}
                       upperLevel={previous.level}
@@ -186,7 +228,7 @@ export function PathMapScreen({
         </div>
 
         <footer className="path-map-footer">
-          <button disabled={!travelComplete} onClick={onContinue} type="button">
+          <button disabled={!travelComplete} onClick={handleContinue} type="button">
             {travelComplete ? `Enter level ${transition.toLevel}` : "Traveling..."}
           </button>
         </footer>
@@ -196,10 +238,12 @@ export function PathMapScreen({
 }
 
 function PathMapSegment({
+  drawMs,
   upperLevel,
   lowerLevel,
   state,
 }: {
+  drawMs: number;
   upperLevel: number;
   lowerLevel: number;
   state: PathMapSegmentState;
@@ -207,12 +251,20 @@ function PathMapSegment({
   const fromX = pathMapNodeCenterX(upperLevel);
   const toX = pathMapNodeCenterX(lowerLevel);
   const segmentHeight = PATH_MAP_SEGMENT_HEIGHT_PX;
+  const length = pathMapSegmentLength(fromX, toX, segmentHeight);
+  const segmentStyle = {
+    "--path-dash-gap": `${PATH_MAP_GAP_LENGTH}`,
+    "--path-dash-length": `${PATH_MAP_DASH_LENGTH}`,
+    "--segment-draw-ms": `${drawMs}ms`,
+    "--segment-length": `${length}`,
+  } as CSSProperties;
 
   return (
     <svg
       aria-hidden="true"
       className={["path-map-segment", `is-${state}`].join(" ")}
       preserveAspectRatio="none"
+      style={segmentStyle}
       viewBox={`0 0 100 ${segmentHeight}`}
     >
       <line x1={fromX} x2={toX} y1="0" y2={String(segmentHeight)} />

@@ -10,12 +10,27 @@ export function getPathMapNodeOffsetPx(level: number): number {
   return (level - 1) % 2 === 0 ? -PATH_MAP_NODE_OFFSET_PX : PATH_MAP_NODE_OFFSET_PX;
 }
 
+export const PATH_MAP_DASH_LENGTH = 5;
+export const PATH_MAP_GAP_LENGTH = 6;
+
 /** Connector anchor X in a 0–100 viewBox (50 = track center). */
 export function pathMapNodeCenterX(level: number): number {
   return (
     50 +
     (getPathMapNodeOffsetPx(level) / PATH_MAP_TRACK_WIDTH_PX) * 100
   );
+}
+
+export function pathMapSegmentLength(
+  fromX: number,
+  toX: number,
+  height: number = PATH_MAP_SEGMENT_HEIGHT_PX,
+): number {
+  return Math.hypot(toX - fromX, height);
+}
+
+export function pathMapSegmentDrawMs(length: number): number {
+  return Math.round(240 + length * 11);
 }
 
 export function getLevelEncounterId(level: number): number {

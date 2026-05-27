@@ -678,7 +678,8 @@ img {
 }
 
 .game-layout--hidden {
-  visibility: hidden;
+  opacity: 0;
+  transform: translateY(12px) scale(0.985);
   pointer-events: none;
 }
 
@@ -921,6 +922,9 @@ img {
   gap: 8px;
   min-height: 0;
   overflow: hidden;
+  transition:
+    opacity 420ms ease,
+    transform 420ms ease;
 }
 
 .game-layout--encounter,
@@ -2847,13 +2851,29 @@ img {
   display: grid;
   padding: 12px;
   border: 3px solid #604631;
+  opacity: 0;
+  transform: translateY(16px) scale(0.985);
+  transition:
+    opacity 420ms ease,
+    transform 420ms ease;
   background:
-    radial-gradient(circle at 50% 20%, rgba(120, 88, 48, 0.22), transparent 55%),
-    linear-gradient(rgba(34, 24, 18, 0.96), rgba(14, 10, 8, 0.98)),
-    url("/assets/game/ui/section-texture.png") center / 280px;
+    radial-gradient(circle at 50% 18%, rgba(120, 88, 48, 0.18), transparent 58%),
+    linear-gradient(rgba(34, 24, 18, 0.88), rgba(14, 10, 8, 0.94)),
+    url("/assets/game/backgrounds/path-map-retro.webp") center top / cover;
   box-shadow:
     inset 0 0 0 4px rgba(10, 7, 6, 0.86),
     inset 0 0 80px rgba(0, 0, 0, 0.45);
+}
+
+.path-map-screen.is-shown {
+  opacity: 1;
+  transform: none;
+}
+
+.path-map-screen.is-exiting {
+  opacity: 0;
+  transform: translateY(-12px) scale(1.01);
+  pointer-events: none;
 }
 
 .path-map-screen-inner {
@@ -2895,8 +2915,8 @@ img {
   scroll-behavior: smooth;
   border: 2px solid #49382a;
   background:
-    radial-gradient(circle at 50% 0%, rgba(58, 42, 28, 0.45), rgba(10, 8, 6, 0.94)),
-    url("/assets/game/mainbg.png") center / cover;
+    linear-gradient(rgba(10, 8, 6, 0.42), rgba(10, 8, 6, 0.52)),
+    url("/assets/game/backgrounds/path-map-retro.webp") center top / cover;
   box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.55);
   -webkit-overflow-scrolling: touch;
 }
@@ -2929,6 +2949,8 @@ img {
 
 .path-map-segment line {
   stroke: rgba(213, 166, 90, 0.55);
+  stroke-dasharray: var(--path-dash-length) var(--path-dash-gap);
+  stroke-dashoffset: 0;
   stroke-linecap: round;
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
@@ -2936,17 +2958,25 @@ img {
 
 .path-map-segment.is-hidden line {
   opacity: 0;
+  stroke-dashoffset: var(--segment-length);
 }
 
 .path-map-segment.is-revealed line {
-  stroke-dasharray: 5 6;
+  opacity: 1;
+  stroke-dashoffset: 0;
 }
 
 .path-map-segment.is-drawing line {
   stroke: rgba(255, 211, 122, 0.85);
-  stroke-dasharray: 96;
-  stroke-dashoffset: 96;
-  animation: path-segment-draw 850ms ease-out forwards;
+  opacity: 1;
+  stroke-dashoffset: var(--segment-length);
+  animation: path-segment-draw var(--segment-draw-ms, 850ms) ease-out forwards;
+}
+
+@keyframes path-segment-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 .path-map-node {
@@ -3080,12 +3110,6 @@ img {
   min-width: 220px;
 }
 
-@keyframes path-segment-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
 @keyframes path-node-arrive {
   0% {
     box-shadow:
@@ -3141,13 +3165,20 @@ img {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .game-layout {
+    transition: none;
+  }
+
+  .path-map-screen {
+    transition: none;
+  }
+
   .path-map-scroll {
     scroll-behavior: auto;
   }
 
   .path-map-segment.is-drawing line {
     animation: none;
-    stroke-dasharray: 5 6;
     stroke-dashoffset: 0;
   }
 

@@ -8,8 +8,6 @@ import {
   getPathMapNodeOffsetPx,
   getPathMapSegmentState,
   isBossLevel,
-  PATH_MAP_DASH_LENGTH,
-  PATH_MAP_GAP_LENGTH,
   PATH_MAP_LEVEL_COUNT,
   PATH_MAP_SEGMENT_HEIGHT_PX,
   pathMapNodeCenterX,
@@ -22,6 +20,9 @@ import type { PathMapTransition } from "@/lib/game/usePathMapGate";
 
 const travelLeadMs = 140;
 const screenTransitionMs = 420;
+const pathSegmentDashCount = 5;
+const pathSegmentEndInset = 14;
+const pathSegmentGapRatio = 0.72;
 
 type TravelPhase = "prepare" | "travel" | "complete";
 type ScreenPhase = "enter" | "shown" | "exit";
@@ -211,7 +212,6 @@ export function PathMapScreen({
                     <div className="path-map-node-track">
                       <div className="path-map-node-circle">
                         <img alt="" src={node.image} />
-                        <span className="path-map-node-level">{node.level}</span>
                       </div>
                     </div>
                     <p className="path-map-node-title">{node.title}</p>
@@ -246,12 +246,15 @@ function PathMapSegment({
   const fromX = pathMapNodeCenterX(upperLevel);
   const toX = pathMapNodeCenterX(lowerLevel);
   const segmentHeight = PATH_MAP_SEGMENT_HEIGHT_PX;
-  const length = pathMapSegmentLength(fromX, toX, segmentHeight);
+  const dashSegments = getPathDashSegments(
+    fromX,
+    toX,
+    segmentHeight,
+    pathSegmentDashCount,
+  );
+  const dashDelayMs = Math.round(drawMs / Math.max(1, dashSegments.length));
   const segmentStyle = {
-    "--path-dash-gap": `${PATH_MAP_GAP_LENGTH}`,
-    "--path-dash-length": `${PATH_MAP_DASH_LENGTH}`,
     "--segment-draw-ms": `${drawMs}ms`,
-    "--segment-length": `${length}`,
   } as CSSProperties;
 
   return (
@@ -262,7 +265,58 @@ function PathMapSegment({
       style={segmentStyle}
       viewBox={`0 0 100 ${segmentHeight}`}
     >
-      <line x1={fromX} x2={toX} y1="0" y2={String(segmentHeight)} />
+      {dashSegments.map((dash) => (
+        <line
+          className="path-map-segment-dash"
+          key={dash.index}
+          style={
+            {
+              "--dash-delay": `${dash.index * dashDelayMs}ms`,
+            } as CSSProperties
+          }
+          x1={dash.x1}
+          x2={dash.x2}
+          y1={dash.y1}
+          y2={dash.y2}
+        />
+      ))}
     </svg>
   );
+}
+
+function getPathDashSegments(
+  fromX: number,
+  toX: number,
+  height: number,
+  dashCount: number,
+) {
+  const length = pathMapSegmentLength(fromX, toX, height);
+  const inset = Math.min(pathSegmentEndInset, length * 0.22);
+  const drawableLength = Math.max(1, length - inset * 2);
+  const dashLength =
+    drawableLength / (dashCount + (dashCount - 1) * pathSegmentGapRatio);
+  const gapLength = dashLength * pathSegmentGapRatio;
+
+  function pointAt(distance: number) {
+    const t = distance / length;
+    return {
+      x: fromX + (toX - fromX) * t,
+      y: height * t,
+    };
+  }
+
+  return Array.from({ length: dashCount }, (_, index) => {
+    const startDistance = inset + index * (dashLength + gapLength);
+    const endDistance = Math.min(startDistance + dashLength, length - inset);
+    const start = pointAt(startDistance);
+    const end = pointAt(endDistance);
+
+    return {
+      index,
+      x1: start.x,
+      x2: end.x,
+      y1: start.y,
+      y2: end.y,
+    };
+  });
 }

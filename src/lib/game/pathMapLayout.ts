@@ -3,16 +3,13 @@ import { getBossEncounterId } from "@/lib/game/runDisplay";
 export const PATH_MAP_TRACK_WIDTH_PX = 360;
 export const PATH_MAP_LEVEL_COUNT = 20;
 export const PATH_MAP_SEGMENT_HEIGHT_PX = 80;
-export const PATH_MAP_NODE_OFFSET_PX = 36;
+export const PATH_MAP_NODE_OFFSET_PX = 56;
 export const PATH_MAP_CIRCLE_SIZE_PX = 100;
 
 /** Slight alternating horizontal offset from center (px). */
 export function getPathMapNodeOffsetPx(level: number): number {
   return (level - 1) % 2 === 0 ? -PATH_MAP_NODE_OFFSET_PX : PATH_MAP_NODE_OFFSET_PX;
 }
-
-export const PATH_MAP_DASH_LENGTH = 5;
-export const PATH_MAP_GAP_LENGTH = 6;
 
 /** Connector anchor X in a 0–100 viewBox (50 = track center). */
 export function pathMapNodeCenterX(level: number): number {
@@ -31,7 +28,7 @@ export function pathMapSegmentLength(
 }
 
 export function pathMapSegmentDrawMs(length: number): number {
-  return Math.round(240 + length * 11);
+  return Math.round(480 + length * 14);
 }
 
 export function getLevelEncounterId(level: number): number {

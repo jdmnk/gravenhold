@@ -2882,10 +2882,15 @@ img {
   width: 100%;
   min-height: 0;
   height: 100%;
-  overflow: hidden;
 }
 
 .path-map-header {
+  padding: 8px 12px 10px;
+  border: 2px solid #49382a;
+  background:
+    linear-gradient(rgba(29, 20, 14, 0.96), rgba(13, 9, 7, 0.98)),
+    url("/assets/game/ui/bg-dark.png") center / 120px;
+  box-shadow: inset 0 0 0 3px rgba(10, 7, 6, 0.74);
   text-align: center;
 }
 
@@ -2917,7 +2922,7 @@ img {
   border: 2px solid #49382a;
   background:
     linear-gradient(rgba(10, 8, 6, 0.42), rgba(10, 8, 6, 0.52)),
-    url("/assets/game/backgrounds/path-map-wide-retro.webp") center / contain no-repeat,
+    url("/assets/game/backgrounds/path-map-wide-retro.webp") center / cover no-repeat,
     #100c09;
   box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.55);
   image-rendering: pixelated;
@@ -2951,35 +2956,31 @@ img {
   overflow: visible;
 }
 
-.path-map-segment line {
+.path-map-segment-dash {
   stroke: rgba(213, 166, 90, 0.55);
-  stroke-dasharray: var(--path-dash-length) var(--path-dash-gap);
-  stroke-dashoffset: 0;
   stroke-linecap: round;
-  stroke-width: 2;
+  stroke-width: 3;
   vector-effect: non-scaling-stroke;
 }
 
-.path-map-segment.is-hidden line {
+.path-map-segment.is-hidden .path-map-segment-dash {
   opacity: 0;
-  stroke-dashoffset: var(--segment-length);
 }
 
-.path-map-segment.is-revealed line {
+.path-map-segment.is-revealed .path-map-segment-dash {
   opacity: 1;
-  stroke-dashoffset: 0;
 }
 
-.path-map-segment.is-drawing line {
+.path-map-segment.is-drawing .path-map-segment-dash {
   stroke: rgba(255, 211, 122, 0.85);
-  opacity: 1;
-  stroke-dashoffset: var(--segment-length);
-  animation: path-segment-draw var(--segment-draw-ms, 850ms) ease-out forwards;
+  opacity: 0;
+  animation: path-segment-dash-appear 120ms steps(1, end) forwards;
+  animation-delay: var(--dash-delay, 0ms);
 }
 
-@keyframes path-segment-draw {
+@keyframes path-segment-dash-appear {
   to {
-    stroke-dashoffset: 0;
+    opacity: 1;
   }
 }
 
@@ -3003,12 +3004,13 @@ img {
   height: 100px;
   transform: translateX(-50%);
   overflow: hidden;
-  border: 3px solid #4b3828;
+  border: 3px solid #a77a37;
   border-radius: 50%;
   background: rgba(12, 9, 8, 0.92);
   box-shadow:
     0 3px 0 rgba(0, 0, 0, 0.35),
-    inset 0 0 0 2px rgba(255, 255, 255, 0.04);
+    0 0 10px rgba(255, 211, 122, 0.16),
+    inset 0 0 0 2px rgba(255, 211, 122, 0.1);
 }
 
 .path-map-node-circle img {
@@ -3017,23 +3019,6 @@ img {
   height: 100%;
   object-fit: cover;
   filter: saturate(0.35) brightness(0.55);
-}
-
-.path-map-node-level {
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
-  display: grid;
-  place-items: center;
-  min-width: 26px;
-  height: 26px;
-  padding: 0 6px;
-  border: 2px solid #3a2a1c;
-  border-radius: 999px;
-  color: #d8bc93;
-  font-size: 13px;
-  line-height: 1;
-  background: rgba(10, 7, 6, 0.88);
 }
 
 .path-map-node-title {
@@ -3049,16 +3034,16 @@ img {
   transform: translateY(-50%);
 }
 
-.path-map-item.is-visited .path-map-node-circle img {
-  filter: saturate(0.85) brightness(0.82);
-}
-
 .path-map-item.is-visited .path-map-node-title {
   color: #c3b17c;
 }
 
+.path-map-item.is-visited .path-map-node-circle img {
+  filter: saturate(0.85) brightness(0.82);
+}
+
 .path-map-item.is-cleared .path-map-node-circle {
-  border-color: #6a5a38;
+  border-color: #b08a45;
 }
 
 .path-map-item.is-cleared .path-map-node-circle img {
@@ -3066,14 +3051,20 @@ img {
 }
 
 .path-map-item.is-boss .path-map-node-circle {
-  border-color: #8a6030;
+  border-color: #ffbf4f;
   box-shadow:
-    0 0 0 2px rgba(255, 211, 122, 0.12),
-    0 3px 0 rgba(0, 0, 0, 0.35);
+    0 0 0 2px rgba(255, 191, 79, 0.28),
+    0 3px 0 rgba(0, 0, 0, 0.35),
+    0 0 18px rgba(255, 149, 47, 0.36),
+    inset 0 0 0 2px rgba(255, 211, 122, 0.18);
+}
+
+.path-map-item.is-boss .path-map-node-circle img {
+  filter: saturate(1.08) brightness(0.9) contrast(1.08);
 }
 
 .path-map-item.is-boss .path-map-node-title {
-  color: #e8c88a;
+  color: #ffcb72;
 }
 
 .path-map-item.is-highlighting .path-map-node-circle {
@@ -3104,6 +3095,8 @@ img {
 .path-map-footer {
   display: flex;
   justify-content: center;
+  padding: 4px 0 8px;
+  overflow: visible;
 }
 
 .path-map-footer button {
@@ -3114,7 +3107,8 @@ img {
   0% {
     box-shadow:
       0 3px 0 rgba(0, 0, 0, 0.35),
-      inset 0 0 0 2px rgba(255, 255, 255, 0.04);
+      0 0 10px rgba(255, 211, 122, 0.16),
+      inset 0 0 0 2px rgba(255, 211, 122, 0.1);
     transform: translateX(-50%) scale(1);
   }
 
@@ -3167,9 +3161,9 @@ img {
     scroll-behavior: auto;
   }
 
-  .path-map-segment.is-drawing line {
+  .path-map-segment.is-drawing .path-map-segment-dash {
     animation: none;
-    stroke-dashoffset: 0;
+    opacity: 1;
   }
 
   .path-map-item.is-highlighting .path-map-node-circle,

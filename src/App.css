@@ -2858,8 +2858,7 @@ img {
     transform 420ms ease;
   background:
     radial-gradient(circle at 50% 18%, rgba(120, 88, 48, 0.18), transparent 58%),
-    linear-gradient(rgba(34, 24, 18, 0.88), rgba(14, 10, 8, 0.94)),
-    url("/assets/game/backgrounds/path-map-retro.webp") center top / cover;
+    linear-gradient(rgba(34, 24, 18, 0.88), rgba(14, 10, 8, 0.94));
   box-shadow:
     inset 0 0 0 4px rgba(10, 7, 6, 0.86),
     inset 0 0 80px rgba(0, 0, 0, 0.45);
@@ -2880,8 +2879,10 @@ img {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 10px;
+  width: 100%;
   min-height: 0;
   height: 100%;
+  overflow: hidden;
 }
 
 .path-map-header {
@@ -2916,8 +2917,10 @@ img {
   border: 2px solid #49382a;
   background:
     linear-gradient(rgba(10, 8, 6, 0.42), rgba(10, 8, 6, 0.52)),
-    url("/assets/game/backgrounds/path-map-retro.webp") center top / cover;
+    url("/assets/game/backgrounds/path-map-wide-retro.webp") center / contain no-repeat,
+    #100c09;
   box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.55);
+  image-rendering: pixelated;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -2925,6 +2928,7 @@ img {
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-height: 100%;
   margin: 0;
   padding: 32px 20px 48px;
   list-style: none;
@@ -3077,10 +3081,6 @@ img {
   animation: path-node-arrive 850ms ease-out forwards;
 }
 
-.path-map-item.is-highlighting .path-map-node-circle img {
-  animation: path-node-image-arrive 850ms ease-out forwards;
-}
-
 .path-map-item.is-highlighting .path-map-node-title {
   animation: path-node-title-arrive 850ms ease-out forwards;
 }
@@ -3133,16 +3133,6 @@ img {
   }
 }
 
-@keyframes path-node-image-arrive {
-  from {
-    filter: saturate(0.35) brightness(0.55);
-  }
-
-  to {
-    filter: saturate(1) brightness(1);
-  }
-}
-
 @keyframes path-node-title-arrive {
   from {
     color: #8a7160;
@@ -3183,7 +3173,6 @@ img {
   }
 
   .path-map-item.is-highlighting .path-map-node-circle,
-  .path-map-item.is-highlighting .path-map-node-circle img,
   .path-map-item.is-highlighting .path-map-node-title {
     animation: none;
   }

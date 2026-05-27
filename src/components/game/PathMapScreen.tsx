@@ -10,6 +10,7 @@ import {
   isBossLevel,
   PATH_MAP_DASH_LENGTH,
   PATH_MAP_GAP_LENGTH,
+  PATH_MAP_LEVEL_COUNT,
   PATH_MAP_SEGMENT_HEIGHT_PX,
   pathMapNodeCenterX,
   pathMapSegmentDrawMs,
@@ -64,7 +65,7 @@ export function PathMapScreen({
 
   const nodes = useMemo<PathMapNode[]>(
     () =>
-      Array.from({ length: 20 }, (_, index) => {
+      Array.from({ length: PATH_MAP_LEVEL_COUNT }, (_, index) => {
         const level = index + 1;
         const encounterId = getLevelEncounterId(level);
         const cleared =
@@ -75,22 +76,16 @@ export function PathMapScreen({
         const highlight =
           isTarget && (travelPhase === "travel" || travelPhase === "complete");
         const current = isTarget && travelPhase === "complete";
-        let title = `Level ${level}`;
-        try {
-          title = getEncounterText(encounterId).title;
-        } catch {
-          // fallback title
-        }
 
         return {
           boss,
           cleared,
           current,
           highlight,
-          image: encounterBackgroundFor(level),
+          image: encounterBackgroundFor(encounterId),
           level,
           offsetPx: getPathMapNodeOffsetPx(level),
-          title,
+          title: getEncounterText(encounterId).title,
           visited,
         };
       }),

@@ -20,11 +20,11 @@
     },
     {
       "id": "path-map",
-      "filename": "path-map-retro.webp",
+      "filename": "path-map-wide-retro.webp",
       "category": "backgrounds",
-      "size": "1024x1536",
+      "size": "1536x1024",
       "format": "webp",
-      "description": "a grim dark fantasy pilgrimage route seen from above, a long winding trail climbing upward through cold valley hills, misty ridgelines on both sides, worn cart track and old stone mile markers, dead trees and broken fences, distant amber watchfires, central vertical corridor kept relatively clear for overlaid journey nodes, no characters, no map labels",
+      "description": "a grim dark fantasy pilgrimage route seen from above and slightly angled, stretching horizontally through ruined valley terrain toward a distant stronghold, cold hills, broken stone roads, old mile markers, dead trees, low mist, small amber watchfires, central area kept relatively clear for overlaid journey nodes, no characters, no map labels",
       "intendedUse": "full-screen path map backdrop shown when traveling between levels"
     }
   ],

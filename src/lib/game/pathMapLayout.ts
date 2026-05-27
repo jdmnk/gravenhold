@@ -1,6 +1,7 @@
 import { getBossEncounterId } from "@/lib/game/runDisplay";
 
 export const PATH_MAP_TRACK_WIDTH_PX = 360;
+export const PATH_MAP_LEVEL_COUNT = 20;
 export const PATH_MAP_SEGMENT_HEIGHT_PX = 80;
 export const PATH_MAP_NODE_OFFSET_PX = 36;
 export const PATH_MAP_CIRCLE_SIZE_PX = 100;
